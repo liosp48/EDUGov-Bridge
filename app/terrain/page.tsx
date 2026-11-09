@@ -2,18 +2,36 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, Loader2, LogOut, Send, BellRing, UserRound, Lightbulb } from "lucide-react";
-import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Input, Label, Textarea, Select } from "@/components/ui";
+import {
+  CheckCircle2,
+  Loader2,
+  LogOut,
+  Send,
+  BellRing,
+  UserRound,
+  AlertTriangle,
+} from "lucide-react";
+import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Input,
+  Label,
+  Textarea,
+  Select,
+} from "@/components/ui";
 import GeoSelector from "@/components/geo-selector";
 import { insertReponse, insertSignalement, fetchConsultations, fetchReponses } from "@/lib/supabase";
 import { DEMO_REPONSES } from "@/lib/demo-data";
 import {
-  CATEGORIE_COLORS,
-  CATEGORIE_LABELS,
+  INDICATEURS_DECROCHAGE,
   ROLE_LABELS,
   TERRAIN_ROLES,
-  type CategorieSignalement,
   type Consultation,
+  type IndicateurDecrochage,
   type ReponseConsultation,
   type UserRole,
 } from "@/types/database";
@@ -30,38 +48,6 @@ const GRAVITE_LABELS: Record<number, string> = {
   4: "Critique — action nécessaire",
   5: "Urgence vitale — intervention immédiate",
 };
-
-// ── Les 3 missions nationales auxquelles chaque signal contribue ──
-// (défis du Data Challenge Burkina 2026 — miroir de l'accueil public)
-const MISSIONS_TERRAIN = [
-  {
-    n: 1,
-    titre: "Alerte Précoce & Détection des Signaux Faibles",
-    defi: "Défi Décrochage Scolaire",
-    desc: "Vos constats d'absences, de transhumance ou d'orpaillage interceptent le décrochage avant qu'il ne survienne.",
-    categories: ["decrochage", "pedagogie"] as CategorieSignalement[],
-    color: CATEGORIE_COLORS.decrochage,
-  },
-  {
-    n: 2,
-    titre: "Cartographie Terrain des Barrières d'Accès",
-    defi: "Défi Inégalités & Équité",
-    desc: "Vos mesures micro-locales cartographient distance, frais annexes, sécurité et inégalités de genre école par école.",
-    categories: ["genre_rural", "securite"] as CategorieSignalement[],
-    color: CATEGORIE_COLORS.genre_rural,
-  },
-  {
-    n: 3,
-    titre: "Inventaire Dynamique Collaboratif",
-    defi: "Défi Infrastructures & Ressources",
-    desc: "Vos inventaires temps réel listent tables-bancs, toitures, latrines et matériel manquant, établissement par établissement.",
-    categories: ["infrastructure"] as CategorieSignalement[],
-    color: CATEGORIE_COLORS.infrastructure,
-  },
-];
-
-const missionDe = (c: CategorieSignalement) =>
-  MISSIONS_TERRAIN.find((m) => m.categories.includes(c));
 
 export default function TerrainPage() {
   const router = useRouter();
@@ -106,11 +92,11 @@ export default function TerrainPage() {
   const [commune, setCommune] = useState("");
   const [etablissement, setEtablissement] = useState("");
 
-  // Signalement
-  const [categorie, setCategorie] = useState<CategorieSignalement>("decrochage");
+  // Alerte précoce de décrochage (Défi 1)
+  const [indicateurs, setIndicateurs] = useState<string[]>([]);
+  const [nbEleves, setNbEleves] = useState<number>(0);
   const [gravite, setGravite] = useState(3);
   const [description, setDescription] = useState("");
-  const [proposition, setProposition] = useState("");
 
   // États UI
   const [envoi, setEnvoi] = useState(false);
@@ -123,7 +109,16 @@ export default function TerrainPage() {
   const [texteReponse, setTexteReponse] = useState("");
   const [reponseEnvoi, setReponseEnvoi] = useState(false);
 
-  const geoOK = useMemo(() => Boolean(region && province && commune && etablissement), [region, province, commune, etablissement]);
+  const geoOK = useMemo(
+    () => Boolean(region && province && commune && etablissement),
+    [region, province, commune, etablissement]
+  );
+
+  const toggleIndicateur = (cle: string) => {
+    setIndicateurs((prev) =>
+      prev.includes(cle) ? prev.filter((i) => i !== cle) : [...prev, cle]
+    );
+  };
 
   const chargerConsultations = async () => {
     if (consultations) return;
@@ -153,9 +148,18 @@ export default function TerrainPage() {
     setErreur(null);
 
     if (!emetteur.trim()) return setErreur("Veuillez saisir le nom de l'émetteur.");
-    if (!geoOK) return setErreur("Veuillez compléter toute la localisation (région, province, commune, établissement).");
+    if (!geoOK)
+      return setErreur(
+        "Veuillez compléter toute la localisation (région, province, commune, établissement)."
+      );
+    if (indicateurs.length === 0)
+      return setErreur("Sélectionnez au moins un indicateur de risque observé.");
+    if (nbEleves < 0 || !Number.isInteger(nbEleves))
+      return setErreur("Le nombre d'élèves en danger doit être un entier positif.");
     if (description.trim().length < 30)
-      return setErreur("Merci de détailler le constat (minimum 30 caractères) pour que l'analyse soit utile.");
+      return setErreur(
+        "Merci de détailler le contexte (minimum 30 caractères) pour que l'analyse soit utile."
+      );
 
     setEnvoi(true);
     const result = await insertSignalement({
@@ -167,10 +171,11 @@ export default function TerrainPage() {
       commune,
       village_secteur: village.trim() || null,
       etablissement,
-      categorie,
+      categorie: "decrochage",
+      indicateurs: indicateurs as IndicateurDecrochage[],
+      nb_eleves_risque: nbEleves,
       gravite: gravite as 1 | 2 | 3 | 4 | 5,
       description: description.trim(),
-      proposition_innovation: proposition.trim() || null,
     });
     setEnvoi(false);
 
@@ -178,11 +183,12 @@ export default function TerrainPage() {
 
     setSucces(
       result.mode === "supabase"
-        ? "✅ Signalement transmis à la base nationale. Merci : votre voix est comptabilisée."
-        : "✅ Signalement enregistré (mode démo). Merci : votre voix est comptabilisée."
+        ? "✅ Alerte transmise à la base nationale. Merci : chaque jour gagné, c'est un enfant qui reste à l'école."
+        : "✅ Alerte enregistrée (mode démo). Merci : chaque jour gagné, c'est un enfant qui reste à l'école."
     );
     setDescription("");
-    setProposition("");
+    setIndicateurs([]);
+    setNbEleves(0);
     setGravite(3);
   };
 
@@ -243,9 +249,9 @@ export default function TerrainPage() {
     <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Espace Acteurs du Terrain</h1>
+          <h1 className="text-3xl font-bold text-slate-900">Espace Terrain — Alerte Précoce</h1>
           <p className="mt-1 text-slate-600">
-            Votre constat devient une donnée nationale. Votre innovation peut inspirer tout le Burkina.
+            Votre observation d'aujourd'hui intercepte le décrochage de demain.
           </p>
         </div>
         <Card className="flex items-center gap-3 px-4 py-2.5">
@@ -266,37 +272,27 @@ export default function TerrainPage() {
         </Card>
       </div>
 
-      {/* ── Vos signaux alimentent 3 missions nationales ──────────── */}
-      <Card className="mt-6 border-l-4 border-l-faso-green">
+      {/* ── Bannière mission unique : Défi 1 ──────────────────────── */}
+      <Card className="mt-6 border-l-4 border-l-faso-red">
         <CardHeader>
-          <CardTitle>Chaque signal que vous remontez alimente 3 missions nationales</CardTitle>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge className="bg-faso-red/10 text-faso-red">Défi 1 · Data Challenge Burkina 2026</Badge>
+            <Badge className="bg-slate-100 text-slate-600">Anticipation du décrochage scolaire</Badge>
+          </div>
+          <CardTitle>Votre alerte déclenche la riposte nationale</CardTitle>
           <p className="text-sm text-slate-600">
-            Vos contributions entrent directement dans les défis du Data Challenge Burkina 2026.
-            Vos signalements sont catégorisés vers la mission correspondante, automatiquement.
+            Dès qu'un élève disparaît des registres, chaque semaine compte. Sélectionnez les
+            signaux faibles observés : ils alimentent en direct l'Indicateur Global de Risque (IRD)
+            du tableau de bord ministériel et le plan d'urgence généré par IA.
           </p>
         </CardHeader>
-        <CardContent>
-          <div className="grid gap-3 sm:grid-cols-3">
-            {MISSIONS_TERRAIN.map((m) => (
-              <div
-                key={m.n}
-                className="rounded-xl border border-slate-200 bg-white p-4"
-                style={{ borderTopColor: m.color, borderTopWidth: 3 }}
-              >
-                <Badge color={m.color}>Mission {m.n} · {m.defi}</Badge>
-                <p className="mt-2 text-sm font-semibold text-slate-900">{m.titre}</p>
-                <p className="mt-1 text-xs text-slate-500">{m.desc}</p>
-              </div>
-            ))}
-          </div>
-        </CardContent>
       </Card>
 
       {/* Onglets */}
       <div className="mt-8 inline-flex rounded-lg border border-slate-200 bg-white p-1 shadow-card">
         {(
           [
-            { key: "signaler", label: "Signaler / Proposer" },
+            { key: "signaler", label: "Alerte Précoce" },
             { key: "consultations", label: "Consultations Ministérielles" },
           ] as { key: Onglet; label: string }[]
         ).map((t) => (
@@ -348,7 +344,7 @@ export default function TerrainPage() {
           {/* ── 2. Localisation ───────────────────────────────── */}
           <Card>
             <CardHeader>
-              <CardTitle>2 · Localisation exacte</CardTitle>
+              <CardTitle>2 · Localité précise de l'alerte</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <GeoSelector
@@ -375,41 +371,68 @@ export default function TerrainPage() {
             </CardContent>
           </Card>
 
-          {/* ── 3. Transmission ───────────────────────────────── */}
+          {/* ── 3. Signaux faibles observés ───────────────────── */}
           <Card>
             <CardHeader>
-              <CardTitle>3 · Transmission du signal</CardTitle>
+              <CardTitle>3 · Signaux faibles de décrochage observés</CardTitle>
+              <p className="text-sm text-slate-600">
+                Cochez tous les indicateurs que vous avez constatés sur vos élèves. Ces indicateurs
+                calculent automatiquement le niveau de risque national.
+              </p>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="grid gap-2 sm:grid-cols-2">
+                {(Object.entries(INDICATEURS_DECROCHAGE) as [string, { label: string; poids: number }][]).map(
+                  ([cle, { label, poids }]) => {
+                    const actif = indicateurs.includes(cle);
+                    return (
+                      <button
+                        type="button"
+                        key={cle}
+                        onClick={() => toggleIndicateur(cle)}
+                        aria-pressed={actif}
+                        className={`flex items-start gap-3 rounded-xl border p-3 text-left transition ${
+                          actif
+                            ? "border-faso-red bg-faso-red/5 ring-2 ring-faso-red/30"
+                            : "border-slate-200 bg-white hover:border-faso-red/40"
+                        }`}
+                      >
+                        <span
+                          className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border ${
+                            actif ? "border-faso-red bg-faso-red text-white" : "border-slate-300 bg-white"
+                          }`}
+                        >
+                          {actif && <CheckCircle2 size={14} />}
+                        </span>
+                        <span>
+                          <span className="block text-sm font-medium text-slate-800">{label}</span>
+                          <span className="block text-xs text-slate-500">
+                            Poids de criticité : {poids}/5
+                          </span>
+                        </span>
+                      </button>
+                    );
+                  }
+                )}
+              </div>
+
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <Label htmlFor="categorie">Catégorie</Label>
-                  <Select
-                    id="categorie"
-                    value={categorie}
-                    onChange={(e) => setCategorie(e.target.value as CategorieSignalement)}
-                  >
-                    {(Object.keys(CATEGORIE_LABELS) as CategorieSignalement[]).map((c) => (
-                      <option key={c} value={c}>
-                        {CATEGORIE_LABELS[c]}
-                      </option>
-                    ))}
-                  </Select>
-                  {missionDe(categorie) && (
-                    <p className="mt-2 flex items-center gap-1.5 text-xs">
-                      <span
-                        className="inline-block h-2 w-2 rounded-full"
-                        style={{ backgroundColor: missionDe(categorie)!.color }}
-                      />
-                      <span className="font-medium text-slate-700">
-                        Votre signal alimente la Mission {missionDe(categorie)!.n}
-                      </span>
-                      <span className="text-slate-500">— {missionDe(categorie)!.titre}</span>
-                    </p>
-                  )}
+                  <Label htmlFor="nb-eleves">Nombre d'élèves en danger de déscolarisation</Label>
+                  <Input
+                    id="nb-eleves"
+                    type="number"
+                    min={0}
+                    required
+                    placeholder="Ex : 19"
+                    value={nbEleves || ""}
+                    onChange={(e) => setNbEleves(Math.max(0, Math.floor(Number(e.target.value) || 0)))}
+                  />
                 </div>
                 <div>
-                  <Label htmlFor="gravite">Niveau de gravité : {GRAVITE_LABELS[gravite]}</Label>
+                  <Label htmlFor="gravite">
+                    Urgence perçue : {GRAVITE_LABELS[gravite]}
+                  </Label>
                   <input
                     id="gravite"
                     type="range"
@@ -424,74 +447,27 @@ export default function TerrainPage() {
               </div>
 
               <div>
-                <Label htmlFor="description">Description détaillée du constat (données chiffrées appréciées)</Label>
+                <Label htmlFor="description">
+                  Description libre du contexte — ce que l'école observe, ce que disent les familles
+                </Label>
                 <Textarea
                   id="description"
                   rows={5}
-                  placeholder="Ex : Sur 52 filles inscrites en 6e, 19 ne reviennent plus depuis novembre…"
+                  placeholder="Ex : Sur 52 filles inscrites en 6e, 19 ne reviennent plus depuis novembre. Les familles indiquent qu'elles partent garder le bétail…"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                 />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* ── 4. Boîte à Solutions ────────────────────────────── */}
-          <Card className="border-l-4" style={{ borderLeftColor: missionDe(categorie)?.color ?? CATEGORIE_COLORS.decrochage }}>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Lightbulb size={19} className="text-amber-500" />
-                4 · Boîte à Solutions — votre innovation pour votre localité
-              </CardTitle>
-              <p className="text-sm text-slate-600">
-                Proposez une idée d'innovation pédagogique ou logistique adaptée à{" "}
-                <strong className="text-slate-800">
-                  {commune || "votre commune"}
-                  {commune ? ` (${region || "votre région"})` : ""}
-                </strong>
-                . Une idée pertinente peut inspirer tout le Burkina.
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex flex-wrap gap-2">
-                {[
-                  "Parrainage scolaire par les notables",
-                  "Cours du soir avec lampes solaires",
-                  "Jardin maraîcher pour la cantine",
-                  "Convois scolaires communautaires",
-                  "Bibliothèque de classe numérique",
-                  "Bancs fabriqués par les forgerons locaux",
-                ].map((idee) => (
-                  <button
-                    key={idee}
-                    type="button"
-                    onClick={() => setProposition(idee + " — adapté à " + (commune || "ma localité") + " : ")}
-                    className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-600 transition hover:border-institution/40 hover:text-institution"
-                  >
-                    {idee}
-                  </button>
-                ))}
-              </div>
-              <div>
-                <Label htmlFor="proposition">Proposition d'idée novatrice</Label>
-                <Textarea
-                  id="proposition"
-                  rows={4}
-                  placeholder="Ex : Clubs de parrainage scolaire gérés par l'APE avec kits solaires…"
-                  value={proposition}
-                  onChange={(e) => setProposition(e.target.value)}
-                />
                 <p className="mt-1.5 text-xs text-slate-500">
-                  Facultatif, mais précieux : les propositions les plus fertiles sont remontées
-                  avec le signal du périmètre concerné.
+                  Ne jamais mentionner le nom complet d'un élève mineur : décrivez la situation, pas
+                  l'identité.
                 </p>
               </div>
             </CardContent>
           </Card>
 
           {erreur && (
-            <p className="rounded-lg border border-faso-red/30 bg-faso-red/10 px-4 py-3 text-sm text-faso-red">
-              {erreur}
+            <p className="flex items-center gap-2 rounded-lg border border-faso-red/30 bg-faso-red/10 px-4 py-3 text-sm text-faso-red">
+              <AlertTriangle size={18} className="shrink-0" /> {erreur}
             </p>
           )}
           {succes && (
@@ -502,7 +478,7 @@ export default function TerrainPage() {
 
           <Button type="submit" size="lg" disabled={envoi} className="w-full sm:w-auto">
             {envoi ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
-            {envoi ? "Transmission en cours…" : "Transmettre au système national"}
+            {envoi ? "Transmission en cours…" : "Transmettre l'alerte au système national"}
           </Button>
         </form>
       ) : (
@@ -537,7 +513,11 @@ export default function TerrainPage() {
                         <Badge className="bg-faso-green/10 text-faso-green">
                           <BellRing size={13} /> Ouverte
                         </Badge>
-                        <Badge className="bg-slate-100 text-slate-600">{c.region_cible ? `Ciblée : ${c.commune_cible ?? c.province_cible ?? c.region_cible}` : "Nationale"}</Badge>
+                        <Badge className="bg-slate-100 text-slate-600">
+                          {c.region_cible
+                            ? `Ciblée : ${c.commune_cible ?? c.province_cible ?? c.region_cible}`
+                            : "Nationale"}
+                        </Badge>
                         <span className="text-xs text-slate-500">
                           Publiée le {formatDateFr(c.date_publication)}
                           {c.date_cloture ? ` · clôture le ${formatDateFr(c.date_cloture)}` : ""}
@@ -576,8 +556,16 @@ export default function TerrainPage() {
                             onChange={(e) => setTexteReponse(e.target.value)}
                           />
                           <div className="flex gap-2">
-                            <Button size="sm" disabled={reponseEnvoi || texteReponse.trim().length < 15} onClick={() => void envoyerReponse(c.id)}>
-                              {reponseEnvoi ? <Loader2 className="animate-spin" size={14} /> : <Send size={14} />}
+                            <Button
+                              size="sm"
+                              disabled={reponseEnvoi || texteReponse.trim().length < 15}
+                              onClick={() => void envoyerReponse(c.id)}
+                            >
+                              {reponseEnvoi ? (
+                                <Loader2 className="animate-spin" size={14} />
+                              ) : (
+                                <Send size={14} />
+                              )}
                               Envoyer
                             </Button>
                             <Button size="sm" variant="outline" onClick={() => setReponseOuverte(null)}>

@@ -41,6 +41,10 @@ create table if not exists public.signalements (
   categorie             text not null check (categorie in (
                           'decrochage','infrastructure','genre_rural',
                           'pedagogie','securite')),
+  -- DÉFI 1 (Décrochage) : signaux faibles observés + élèves en danger
+  indicateurs           text[] not null default '{}',
+  nb_eleves_risque      int not null default 0
+                          check (nb_eleves_risque between 0 and 10000),
   gravite               int not null check (gravite between 1 and 5),
   description           text not null,
   proposition_innovation text,
@@ -52,6 +56,10 @@ create table if not exists public.signalements (
 create index if not exists idx_signalements_geo on public.signalements (region, province, commune);
 create index if not exists idx_signalements_categorie on public.signalements (categorie);
 create index if not exists idx_signalements_created on public.signalements (created_at desc);
+
+-- ── Migration Douce (bases existantes) : colonnes Défi 1 ──────────
+alter table public.signalements add column if not exists indicateurs      text[] not null default '{}';
+alter table public.signalements add column if not exists nb_eleves_risque int    not null default 0;
 
 -- ───────────────────────────────────────────────────────────────────
 -- 3. TABLE CONSULTATIONS (questions ciblées du Ministère)
@@ -180,11 +188,11 @@ on conflict (matricule) do nothing;
 create or replace view public.v_stats_regions as
 select
   region,
-  count(*)                                                as total_signalements,
-  avg(case when categorie = 'decrochage' then gravite end) as gravite_moy_decrochage,
-  count(*) filter (where categorie = 'decrochage')         as nb_decrochage,
-  count(*) filter (where categorie = 'infrastructure')     as nb_infrastructure,
-  count(*) filter (where categorie = 'securite')           as nb_securite
+  count(*)                                                as total_alertes_decrochage,
+  avg(gravite)                                             as gravite_moy_decrochage,
+  sum(nb_eleves_risque)                                    as total_eleves_risque,
+  count(*) filter (where gravite >= 4)                     as alertes_critiques
 from public.signalements
+where categorie = 'decrochage'
 group by region
-order by total_signalements desc;
+order by total_eleves_risque desc;

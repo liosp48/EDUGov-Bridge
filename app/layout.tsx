@@ -5,9 +5,9 @@ import NavSession from "@/components/nav-session";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "EDUGov-Bridge — Faso Édu-Data",
+  title: "EDUGov-Bridge — Faso Édu-Data · Défi 1 : Anti-Décrochage",
   description:
-    "Plateforme civique et décisionnelle bidirectionnelle : donner de la voix au terrain pour éclairer les décisions publiques du Burkina Faso.",
+    "Défi n°1 du Data Challenge Burkina 2026 : anticiper et combattre le décrochage scolaire — alerte précoce du terrain, tableau de bord ministériel (IRD) et Brief IA d'urgence.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

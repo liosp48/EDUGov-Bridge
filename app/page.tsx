@@ -1,140 +1,96 @@
 import Link from "next/link";
 import {
   ArrowRight,
-  Boxes,
-  Building2,
+  BellRing,
+  BrainCircuit,
   CalendarClock,
   LogIn,
   MapPinned,
-  Megaphone,
   Radar,
-  ScanSearch,
-  School,
+  ShieldAlert,
   Users,
 } from "lucide-react";
 import { Badge, Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
-import { fetchConsultations, fetchSignalements } from "@/lib/supabase";
+import { fetchSignalements } from "@/lib/supabase";
 import { REGIONS } from "@/lib/geographie";
+import {
+  IRD_SEUILS,
+  calculerIRD,
+  elevesEnDanger,
+  ecolesEnAlerteCritique,
+  niveauDeRisque,
+  zonesTouchees,
+} from "@/lib/decrochage";
 import { formatDateFr } from "@/lib/utils";
-import { CATEGORIE_COLORS, CATEGORIE_LABELS, type CategorieSignalement } from "@/types/database";
 
 // Missions dynamiques : la consultation de la base doit refléter l'instant (t)
 export const dynamic = "force-dynamic";
 
-// ── Les 3 axes d'impact opérationnel (défis Data Challenge Burkina 2026) ──
-const MISSIONS_IMPACT: {
-  n: number;
-  defi: string;
-  titre: string;
-  desc: string;
-  icon: React.ComponentType<{
-    size?: number;
-    className?: string;
-    style?: React.CSSProperties;
-  }>;
-  categories: CategorieSignalement[];
-  color: string;
-}[] = [
+// ── Les 3 rouages du dispositif anti-décrochage (Défi 1) ──
+const ROUAGES = [
   {
     n: 1,
-    defi: "Défi Décrochage Scolaire",
-    titre: "Alerte Précoce & Détection des Signaux Faibles",
-    desc: "Remontée directe du terrain : chaque signal géolocalisé permet d'intercepter le décrochage avant qu'il ne survienne (absences, transhumance, orpaillage, mariages précoces).",
+    titre: "Alerte Précoce du Terrain",
+    desc: "Enseignants et directeurs signalent en 2 minutes les signaux faibles : absentéisme répété, difficultés financières, chocs sécuritaires ou climatiques, mariages précoces, abandon silencieux.",
     icon: Radar,
-    categories: ["decrochage", "pedagogie"],
-    color: CATEGORIE_COLORS.decrochage,
   },
   {
     n: 2,
-    defi: "Défi Inégalités & Équité",
-    titre: "Cartographie Terrain des Barrières d'Accès",
-    desc: "Mesure micro-locale des difficultés physiques (distance, routes), économiques (frais annexes) et de genre ( sanitaires, bourses, sécurité des filles), école par école.",
-    icon: ScanSearch,
-    categories: ["genre_rural", "securite"],
-    color: CATEGORIE_COLORS.genre_rural,
+    titre: "Tableau de Bord Ministériel",
+    desc: "L'Indicateur Global de Risque (IRD /100), les écoles en alerte critique et les élèves en danger sont calculés en continu, filtrables par Région → Province → Commune.",
+    icon: ShieldAlert,
   },
   {
     n: 3,
-    defi: "Défi Infrastructures & Ressources",
-    titre: "Inventaire Dynamique Collaboratif",
-    desc: "Remontée en temps réel des besoins urgents : tables-bancs, toitures, latrines, salles de classe et matériel — un inventaire collaboratif actualisé en continu.",
-    icon: Boxes,
-    categories: ["infrastructure"],
-    color: CATEGORIE_COLORS.infrastructure,
-  },
-];
-
-const ACTEURS = [
-  {
-    icon: Users,
-    titre: "Enseignants",
-    texte: "Signalement des signaux faibles de décrochage, besoins pédagogiques et propositions d'innovation.",
-  },
-  {
-    icon: School,
-    titre: "Directeurs d'école",
-    texte: "Inventaire d'urgence des infrastructures : tables-bancs, latrines, toitures, effectifs réels.",
-  },
-  {
-    icon: Building2,
-    titre: "Inspecteurs pédagogiques",
-    texte: "Diagnostic de la qualité pédagogique et cartographie des besoins de formation.",
-  },
-  {
-    icon: Megaphone,
-    titre: "APE / COGES",
-    texte: "Retours sur les contraintes socio-économiques, l'accès physique et la sécurité des enfants.",
+    titre: "Ministre Brief IA",
+    desc: "Un clic : l'IA analyse les remontées de la semaine et produit les zones les plus menacées, les causes principales chiffrées et un plan d'action d'urgence ciblé.",
+    icon: BrainCircuit,
   },
 ];
 
 export default async function LandingPage() {
-  const [consultations, signalements] = await Promise.all([
-    fetchConsultations(),
-    fetchSignalements(),
-  ]);
+  const signalements = await fetchSignalements();
 
-  // ── Missions en cours : consultations ouvertes du système ──
-  const missions = consultations.filter((c) => c.statut === "ouverte");
+  // ── Chiffres publics du dispositif ──
+  const ird = calculerIRD(signalements);
+  const niveau = niveauDeRisque(ird);
+  const ecoles = ecolesEnAlerteCritique(signalements);
+  const eleves = elevesEnDanger(signalements);
+  const alertesSemaine = signalements.filter(
+    (s) => +new Date(s.created_at) >= Date.now() - 7 * 24 * 60 * 60 * 1000
+  ).length;
+  const regionsTouchees = new Set(signalements.map((s) => s.region)).size;
 
-  // ── Activités de terrain alimentant ces missions (information publique) ──
-  const activites = [...signalements]
+  const topZones = zonesTouchees(signalements, "region").slice(0, 5);
+  const dernieres = [...signalements]
     .sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at))
     .slice(0, 3);
-  const compteCategorie = new Map<CategorieSignalement, number>();
-  for (const s of signalements) {
-    compteCategorie.set(s.categorie, (compteCategorie.get(s.categorie) ?? 0) + 1);
-  }
-  const parCategorie = (Object.keys(CATEGORIE_LABELS) as CategorieSignalement[])
-    .map((c) => ({ categorie: c, n: compteCategorie.get(c) ?? 0 }))
-    .filter((d) => d.n > 0)
-    .sort((a, b) => b.n - a.n);
-  const total = signalements.length;
 
   return (
     <>
-      {/* ── HERO PUBLIC ──────────────────────────────────────────── */}
+      {/* ── HERO PUBLIC — MISSION UNIQUE : DÉCROCHAGE ────────────── */}
       <section className="relative overflow-hidden bg-institution text-white">
         <div aria-hidden className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-white/5" />
-        <div aria-hidden className="pointer-events-none absolute -bottom-32 left-1/3 h-80 w-80 rounded-full bg-faso-green/20 blur-3xl" />
+        <div aria-hidden className="pointer-events-none absolute -bottom-32 left-1/3 h-80 w-80 rounded-full bg-faso-red/20 blur-3xl" />
         <div className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:py-28">
           <Badge className="bg-white/10 text-faso-gold">
-            Data Challenge Burkina 2026 · Semaine du Numérique, Volet Éducation
+            Data Challenge Burkina 2026 · Défi n°1 — Anticipation du décrochage scolaire
           </Badge>
           <h1 className="mt-6 max-w-3xl text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl">
-            Les missions opérationnelles de l'éducation, à découvert.
+            Chaque enfant déscolarisé a d'abord été un signal ignoré.
           </h1>
           <p className="mt-5 max-w-2xl text-lg text-slate-100/90">
-            EDUGov-Bridge relie le terrain burkinabè au cœur de l'administration : chaque signal
-            remonté, chaque consultation en cours et chaque innovation citoyenne est documenté ici,
-            pour tous. De Ouagadougou à Dori, chaque signal compte.
+            EDUGov-Bridge transforme l'observation des enseignants en riposte nationale : les
+            signaux faibles du décrochage remontés du terrain burkinabè deviennent des alertes
+            chiffrées, cartographiées et traduites en plans d'urgence — de Dori à Bobo-Dioulasso.
           </p>
 
           <div className="mt-10 flex flex-col gap-3 sm:flex-row">
             <Link
-              href="#missions"
+              href="#dispositif"
               className="inline-flex h-12 items-center gap-2 rounded-lg bg-white px-6 font-semibold text-institution transition hover:bg-slate-100"
             >
-              <CalendarClock size={18} /> Voir les missions en cours
+              <CalendarClock size={18} /> Découvrir le dispositif
             </Link>
             <Link
               href="/auth"
@@ -146,126 +102,75 @@ export default async function LandingPage() {
 
           {/* Bandeau chiffres — transparence publique */}
           <dl className="mt-14 grid grid-cols-2 gap-6 sm:grid-cols-4">
-            {[
-              { label: "Missions en cours", value: missions.length },
-              { label: "Régions couvertes", value: REGIONS.length },
-              { label: "Signalements actifs", value: total },
-              {
-                label: "Innovations proposées",
-                value: signalements.filter((s) => s.proposition_innovation).length,
-              },
-            ].map((k) => (
-              <div key={k.label}>
-                <dd className="text-3xl font-extrabold text-faso-gold">{k.value}</dd>
-                <dt className="mt-1 text-sm text-slate-100/80">{k.label}</dt>
-              </div>
-            ))}
+            <div>
+              <dd className="text-3xl font-extrabold text-faso-gold">{eleves}</dd>
+              <dt className="mt-1 text-sm text-slate-100/80">Élèves signalés en danger</dt>
+            </div>
+            <div>
+              <dd className="text-3xl font-extrabold text-faso-gold">{ecoles.length}</dd>
+              <dt className="mt-1 text-sm text-slate-100/80">Écoles en alerte critique</dt>
+            </div>
+            <div>
+              <dd className="text-3xl font-extrabold text-faso-gold">
+                {ird}/100
+              </dd>
+              <dt className="mt-1 text-sm text-slate-100/80">IRD national · risque {niveau}</dt>
+            </div>
+            <div>
+              <dd className="text-3xl font-extrabold text-faso-gold">{alertesSemaine}</dd>
+              <dt className="mt-1 text-sm text-slate-100/80">Alertes cette semaine</dt>
+            </div>
           </dl>
         </div>
       </section>
 
-      {/* ── MISSIONS EN COURS (SECTEUR CENTRAL) ──────────────────── */}
-      <section id="missions" className="mx-auto max-w-7xl px-4 py-16 sm:px-6">
+      {/* ── LES 3 ROUAGES DU DISPOSITIF ──────────────────────────── */}
+      <section id="dispositif" className="mx-auto max-w-7xl px-4 py-16 sm:px-6">
         <div className="flex items-end justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-bold text-slate-900">Missions en cours</h2>
+            <h2 className="text-2xl font-bold text-slate-900">
+              Trois rouages, une seule mission : intercepter le décrochage avant qu'il ne survienne
+            </h2>
             <p className="mt-2 max-w-2xl text-slate-600">
-              Trois axes d'impact opérationnel couvrent chacun un défi du concours. Chaque
-              consultation ouverte et chaque signal de terrain alimente directement l'un de ces
-              axes — en toute transparence.
+              Du banc de l'école au cabinet du ministre, le signal parcourt trois étapes en moins
+              d'une semaine — sans paperasse, sans perte d'information.
             </p>
           </div>
           <MapPinned className="hidden shrink-0 text-institution sm:block" size={36} />
         </div>
 
-        {/* 3 axes d'impact — défis du Data Challenge Burkina 2026 */}
         <div className="mt-8 grid gap-4 lg:grid-cols-3">
-          {MISSIONS_IMPACT.map((m) => {
-            const nbSignals = m.categories.reduce(
-              (acc, c) => acc + (compteCategorie.get(c) ?? 0),
-              0
-            );
-            return (
-              <Card key={m.n} className="border-l-4" style={{ borderLeftColor: m.color }}>
-                <CardHeader>
-                  <div className="flex items-center justify-between gap-2">
-                    <Badge color={m.color}>Mission {m.n}</Badge>
-                    <span className="text-xs text-slate-500">{m.defi}</span>
-                  </div>
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <m.icon size={22} style={{ color: m.color }} /> {m.titre}
-                  </CardTitle>
-                  <p className="text-sm text-slate-600">{m.desc}</p>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                    {nbSignals} signalement(s) de terrain alimente(nt) cet axe ·{" "}
-                    {m.categories.map((c) => CATEGORIE_LABELS[c].toLowerCase()).join(" + ")}
-                  </p>
-                </CardContent>
-              </Card>
-            );
-          })}
+          {ROUAGES.map((m) => (
+            <Card key={m.n} className="border-l-4 border-l-faso-red">
+              <CardHeader>
+                <Badge className="bg-faso-red/10 text-faso-red">Rouage {m.n}</Badge>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <m.icon size={22} className="text-faso-red" /> {m.titre}
+                </CardTitle>
+                <p className="text-sm text-slate-600">{m.desc}</p>
+              </CardHeader>
+            </Card>
+          ))}
         </div>
 
-        {/* Consultations ouvertes — concrétisations opérationnelles des missions */}
-        <h3 className="mt-12 text-lg font-bold text-slate-900">
-          Consultations ouvertes attachées aux missions
-        </h3>
-        <p className="mt-1 text-sm text-slate-600">
-          Les adresses ciblées sont affichées en toute transparence.
-        </p>
-
-        {missions.length === 0 ? (
-          <Card className="mt-8">
-            <CardContent className="p-6 text-sm text-slate-600">
-              Aucune mission active pour le moment. Revenez après le lancement de la prochaine
-              consultation nationale.
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="mt-8 space-y-4">
-            {missions.map((m) => (
-              <Card key={m.id} className="border-l-4 border-l-faso-green">
-                <CardHeader>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge className="bg-faso-green/10 text-faso-green">
-                      <CalendarClock size={13} /> Ouverte
-                    </Badge>
-                    <Badge className="bg-slate-100 text-slate-600">
-                      {m.region_cible ? `Ciblée · ${m.commune_cible ?? m.province_cible ?? m.region_cible}` : "Ciblée · Tout le territoire"}
-                    </Badge>
-                    <span className="text-xs text-slate-500">
-                      Publiée le {formatDateFr(m.date_publication)}
-                      {m.date_cloture ? ` · clôture le ${formatDateFr(m.date_cloture)}` : ""}
-                    </span>
-                  </div>
-                  <CardTitle className="text-lg">{m.titre}</CardTitle>
-                  <p className="text-sm text-slate-600">{m.question}</p>
-                </CardHeader>
-              </Card>
-            ))}
-          </div>
-        )}
-
-        {/* Répartition publique des activités de terrain */}
-        {parCategorie.length > 0 && (
-          <div className="mt-10">
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-              Activités de terrain en cours — répartition publique
+        {/* Zones les plus touchées — information publique agrégée */}
+        {topZones.length > 0 && (
+          <div className="mt-12">
+            <h3 className="text-lg font-bold text-slate-900">
+              Régions les plus touchées, en ce moment
             </h3>
-            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
-              {parCategorie.map(({ categorie, n }) => (
-                <div
-                  key={categorie}
-                  className="rounded-xl border border-slate-200 bg-white p-4 shadow-card"
-                >
-                  <span
-                    className="inline-block h-2.5 w-2.5 rounded-full"
-                    style={{ backgroundColor: CATEGORIE_COLORS[categorie] }}
-                  />
-                  <p className="mt-2 text-2xl font-bold text-slate-900">{n}</p>
-                  <p className="text-xs text-slate-500">{CATEGORIE_LABELS[categorie]}</p>
+            <p className="mt-1 text-sm text-slate-600">
+              Agrégation publique des alertes décrochage — jamais de données nominatives.
+            </p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+              {topZones.map((z) => (
+                <div key={z.nom} className="rounded-xl border border-slate-200 bg-white p-4 shadow-card">
+                  <p className="text-sm font-semibold text-slate-800">{z.nom}</p>
+                  <p className="mt-1 text-2xl font-bold text-faso-red">{z.ird}</p>
+                  <p className="text-xs text-slate-500">
+                    IRD {z.ird >= IRD_SEUILS.eleve ? "élevé" : z.ird >= IRD_SEUILS.moyen ? "moyen" : "maîtrisé"} ·{" "}
+                    {z.eleves} élève(s)
+                  </p>
                 </div>
               ))}
             </div>
@@ -273,16 +178,16 @@ export default async function LandingPage() {
         )}
       </section>
 
-      {/* ── CE QUE LE TERRAIN TRAVAILLE EN CE MOMENT ─────────────── */}
+      {/* ── DERNIÈRES ALERTES DU TERRAIN (anonymes) ─────────────── */}
       <section className="bg-white py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
-          <h2 className="text-2xl font-bold text-slate-900">Ce que le terrain travaille, en ce moment</h2>
+          <h2 className="text-2xl font-bold text-slate-900">Ce que le terrain signale, en ce moment</h2>
           <p className="mt-2 text-slate-600">
-            Extraits publics, géolocalisés et catégorisés, du flux remonté par les acteurs
-            opérationnels.
+            Extraits publics et géolocalisés des alertes précoces remontées par les enseignants,
+            directeurs et parents — la description protège l'identité des élèves.
           </p>
           <div className="mt-8 grid gap-4 lg:grid-cols-3">
-            {activites.map((s) => (
+            {dernieres.map((s) => (
               <Card key={s.id}>
                 <CardHeader>
                   <p className="text-xs text-slate-500">
@@ -291,9 +196,11 @@ export default async function LandingPage() {
                   <CardTitle className="line-clamp-2">{s.description.slice(0, 110)}…</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <Badge color={CATEGORIE_COLORS[s.categorie]}>{CATEGORIE_LABELS[s.categorie]}</Badge>
-                  <p className="mt-2 text-xs text-slate-500">
-                    Gravité : {s.gravite}/5 · {ROLE_FR(s.role_emetteur)}
+                  <Badge className="bg-faso-red/10 text-faso-red">
+                    <BellRing size={13} /> Alerte décrochage
+                  </Badge>
+                  <p className="mt-2 flex items-center gap-1.5 text-xs text-slate-500">
+                    <Users size={13} /> {s.nb_eleves_risque} élève(s) en danger · gravité {s.gravite}/5
                   </p>
                 </CardContent>
               </Card>
@@ -302,21 +209,36 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* ── LES 4 ACTEURS OPÉRATIONNELS ────────────────────────── */}
+      {/* ── POUR QUI ? ──────────────────────────────────────────── */}
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6">
-        <h2 className="text-2xl font-bold text-slate-900">Quatre acteurs, une même voix</h2>
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {ACTEURS.map((a) => (
-            <Card key={a.titre}>
-              <CardHeader>
-                <a.icon className="text-institution" size={26} />
-                <CardTitle className="mt-2">{a.titre}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-slate-600">{a.texte}</p>
-              </CardContent>
-            </Card>
-          ))}
+        <h2 className="text-2xl font-bold text-slate-900">Deux espaces, une même bataille</h2>
+        <div className="mt-8 grid gap-4 lg:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <Radar className="text-institution" size={26} />
+              <CardTitle className="mt-2">Espace Terrain — Enseignants & Directeurs</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-slate-600">
+                Vous voyez l'élève qui s'absente, la famille qui se serre la ceinture, la fille qui
+                disparaît des registres. Déclarez en 2 minutes : votre alerte rejoint
+                instantanément le radar national, protégée et anonymisée.
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <BrainCircuit className="text-faso-green" size={26} />
+              <CardTitle className="mt-2">Espace Ministère — Décideurs</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-slate-600">
+                IRD par territoire, écoles en alerte critique, élèves en danger : le tableau de bord
+                dédié au décrochage, complété par un brief IA qui transforme les alertes de la
+                semaine en plan d'urgence ciblé.
+              </p>
+            </CardContent>
+          </Card>
         </div>
       </section>
 
@@ -324,11 +246,12 @@ export default async function LandingPage() {
       <section className="mx-auto max-w-7xl px-4 pb-8 sm:px-6">
         <div className="rounded-2xl bg-institution px-6 py-12 text-center text-white sm:px-12">
           <h2 className="text-2xl font-bold sm:text-3xl">
-            Prêt à rejoindre les missions en cours ?
+            {REGIONS.length} régions couvertes · un seul objectif : zéro enfant perdu
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-slate-100/85">
-            L'accès aux espaces de travail est protégé : chaque profil est orienté automatiquement
-            vers ses responsabilités après une connexion vérifiée.
+            L'accès aux espaces de travail est protégé : le terrain rejoint l'Alerte Précoce, les
+            décideurs gouvernementaux le Tableau de Bord Anti-Décrochage — après une connexion
+            vérifiée.
           </p>
           <div className="mt-6 flex justify-center">
             <Link
@@ -342,14 +265,4 @@ export default async function LandingPage() {
       </section>
     </>
   );
-}
-
-function ROLE_FR(role: string): string {
-  const map: Record<string, string> = {
-    enseignant: "Enseignant",
-    directeur_ecole: "Directeur d'école",
-    inspecteur: "Inspecteur",
-    representant_parents: "APE/COGES",
-  };
-  return map[role] ?? role;
 }

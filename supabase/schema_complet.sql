@@ -90,13 +90,20 @@ create table if not exists public.signalements (
   categorie             text not null check (categorie in (
                           'decrochage','infrastructure','genre_rural',
                           'pedagogie','securite')),
+  -- DÉFI 1 (Décrochage) : signaux faibles observés + élèves en danger
+  indicateurs           text[] not null default '{}',
+  nb_eleves_risque      int not null default 0
+                          check (nb_eleves_risque between 0 and 10000),
   gravite               int not null check (gravite between 1 and 5),
   description           text not null,
-  proposition_innovation text,
   statut                text not null default 'nouveau' check (statut in (
                           'nouveau','en_analyse','verifie','transmis_bureau','clos')),
   created_at            timestamptz not null default now()
 );
+
+-- ── Migration Douce (bases existantes) : colonnes Défi 1 ──────────
+alter table public.signalements add column if not exists indicateurs      text[] not null default '{}';
+alter table public.signalements add column if not exists nb_eleves_risque int    not null default 0;
 
 create index if not exists idx_signalements_geo       on public.signalements (region, province, commune);
 create index if not exists idx_signalements_categorie on public.signalements (categorie);
@@ -192,14 +199,14 @@ create policy "update_consultations" on public.consultations for update using (t
 create or replace view public.v_stats_regions as
 select
   region,
-  count(*)                                                as total_signalements,
-  avg(case when categorie = 'decrochage' then gravite end) as gravite_moy_decrochage,
-  count(*) filter (where categorie = 'decrochage')         as nb_decrochage,
-  count(*) filter (where categorie = 'infrastructure')     as nb_infrastructure,
-  count(*) filter (where categorie = 'securite')           as nb_securite
+  count(*)                                                as total_alertes_decrochage,
+  avg(gravite)                                             as gravite_moy_decrochage,
+  sum(nb_eleves_risque)                                    as total_eleves_risque,
+  count(*) filter (where gravite >= 4)                     as alertes_critiques
 from public.signalements
+where categorie = 'decrochage'
 group by region
-order by total_signalements desc;
+order by total_eleves_risque desc;
 
 -- ───────────────────────────────────────────────────────────────────
 -- 9. SEED 9A — RÉFÉRENTIEL DRH (matricules de démonstration)
@@ -240,69 +247,69 @@ on conflict (id) do nothing;
 -- ───────────────────────────────────────────────────────────────────
 insert into public.signalements
   (id, profil_id, emetteur, role_emetteur, region, province, commune,
-   village_secteur, etablissement, categorie, gravite, description,
-   proposition_innovation, statut, created_at)
+   village_secteur, etablissement, categorie, indicateurs, nb_eleves_risque,
+   gravite, description, statut, created_at)
 values
   ('a1000000-0000-0000-0000-000000000001', null, 'Aïcha Ouédraogo', 'enseignant',
-   'Sahel', 'Séno', 'Dori', 'Falagountou', 'CEG Falagountou', 'decrochage', 5,
-   'On constate depuis novembre un abandon massif des filles en 6e et 5e : sur 52 filles inscrites, 19 ne reviennent plus. Les parents préfèrent envoyer les enfants garder le bétail pendant la période de transhumance. Les cours du soir ne fonctionnent plus faute de lampes solaires.',
-   'Clubs de parrainage scolaire : chaque chef de famille notable parraine 3 filles (kit solaire + cantine) et un suivi trimestriel par l''APE.',
+   'Sahel', 'Séno', 'Dori', 'Falagountou', 'CEG Falagountou', 'decrochage',
+   ARRAY['absenteisme_repete','difficultes_financieres','orpaillage_transhumance'], 19, 5,
+   'Depuis novembre, sur 52 filles inscrites en 6e, 19 ne reviennent plus. Les parents envoient les enfants garder le bétail pendant la transhumance. Trois familles n''ont plus de quoi payer les frais annexes.',
    'nouveau', '2026-11-04T09:12:00Z'),
   ('a1000000-0000-0000-0000-000000000002', null, 'Boureima Sawadogo', 'directeur_ecole',
-   'Hauts-Bassins', 'Houet', 'Bobo-Dioulasso', 'Sarfalao', 'CES Sarfalao', 'infrastructure', 4,
-   'Inventaire d''urgence : sur 32 salles utilisables, 9 ont la toiture endommagée depuis la saison des pluies. 720 élèves assis sur des tables-bancs pour 400 places réelles. Le bloc de latrines (6 cases pour 960 élèves) est saturé, les filles quittent l''école pour rentrer chez elles.',
-   'Convention communale réhabilitation : mobiliser les artisans locaux (maçons-ferblantiers formés) avec un chèque-kit matériaux, dossiers prêts à l''emploi.',
-   'en_analyse', '2026-11-05T14:30:00Z'),
-  ('a1000000-0000-0000-0000-000000000003', null, 'Rasmané Kaboré', 'enseignant',
-   'Centre', 'Kadiogo', 'Ouagadougou', 'Gounghin', 'CES Gounghin', 'pedagogie', 3,
-   '36 élèves par classe sur les langues, tests de positionnement montrant 60% d''élèves fonctionnellement illettrés en français en 4e. Les manuels du programme bilingue sont épuisés depuis deux ans et rien pour compenser.',
-   'Bibliothèque de classe numérique open-source sur tablettes rechargeables (100 livres copyright-free français/fulfuldé/mooré), kit cédé par la coopérative des enseignants',
-   'nouveau', '2026-11-05T21:45:00Z'),
-  ('a1000000-0000-0000-0000-000000000004', null, 'Fadima Sanogo', 'representant_parents',
-   'Sahel', 'Séno', 'Gorom-Gorom', 'Anderka-Bouyam', 'ÉPP Anderka-Bouyam', 'securite', 5,
-   'Depuis les incidents de l''école primaire d''Anderka-Bouyam, les enfants marchent 12 km pour se rendre à l''école, certains passent la nuit dehors. Point d''eau non sécurisé. Trois familles ont retiré tous leurs enfants (9 élèves) de l''école.',
-   'Convois scolaires communautaires organisés par l''APE avec accompagnateurs tournants, abris-vigie aux points critiques financés par la tontine du village.',
+   'Centre-Nord', 'Sanmatenga', 'Barsalogho', 'Namissiguima', 'ÉPP Namissiguima', 'decrochage',
+   ARRAY['choc_securitaire','abandon_silencieux'], 34, 5,
+   'Zone attaquée le mois dernier : 2 familles déplacées ont quitté le village avec leurs enfants sans transfert de dossier. 34 élèves n''ont pas remis les pieds en classe depuis 3 semaines, sans nouvelle des familles.',
+   'verifie', '2026-11-06T07:40:00Z'),
+  ('a1000000-0000-0000-0000-000000000003', null, 'Fadima Sanogo', 'representant_parents',
+   'Sahel', 'Séno', 'Gorom-Gorom', 'Anderka-Bouyam', 'ÉPP Anderka-Bouyam', 'decrochage',
+   ARRAY['choc_securitaire','difficultes_financieres','absenteisme_repete'], 9, 5,
+   'Depuis les incidents, les enfants marchent 12 km pour l''école, certains passent la nuit dehors. Trois familles ont retiré tous leurs enfants (9 élèves). Les autres s''absentent dès qu''il y a une rumeur.',
    'verifie', '2026-11-06T06:05:00Z'),
-  ('a1000000-0000-0000-0000-000000000005', null, 'Dr. Salif Nikièma', 'inspecteur',
-   'Est', 'Gourma', 'Fada N''Gourma', 'Zanlougou', 'CES Zanlougou', 'pedagogie', 3,
-   'Diagnostic qualité : sur les 8 enseignants suivis, 5 sont contractuels non formés à la didactique des mathématiques. Taux moyen de réussite au BEPC de la commune : 24% contre 52% il y a 4 ans. Aucun stage de renforcement depuis 2023.',
-   'Pair-à-pédagogie : jumeler les contractuels avec des enseignants titulaires expérimentés contre des crédits de formation validés par l''inspection.',
-   'nouveau', '2026-11-06T11:20:00Z'),
-  ('a1000000-0000-0000-0000-000000000006', null, 'Nafissata Zongo', 'enseignant',
-   'Sud-Ouest', 'Nahouri', 'Pô', 'Bicouré', 'ÉPP Bicouré', 'genre_rural', 4,
-   '12 filles mariées en CM1-CM2 cette année sur une seule classe. L''école n''a aucun bloc sanitaire privé pour les adolescentes ni kit d''hygiène. Les redoublements répétés masculinisent la classe.',
-   'Bourse conditionnelle gérée par l''APE : versement mensuel aux filles si présence ≥85% + sanction sociale positive (tableau d''honneur des mères)',
+  ('a1000000-0000-0000-0000-000000000004', null, 'Nafissata Zongo', 'enseignant',
+   'Sud-Ouest', 'Nahouri', 'Pô', 'Bicouré', 'ÉPP Bicouré', 'decrochage',
+   ARRAY['mariage_grossesse_precoce'], 12, 4,
+   '12 filles mariées en CM1-CM2 cette année sur une seule classe. Deux autres présentent des signes de grossesse. Les familles refusent d''évoquer le retour en classe, la belle-famille a déjà payé la dot.',
    'nouveau', '2026-11-03T17:10:00Z'),
-  ('a1000000-0000-0000-0000-000000000007', null, 'Issouf Traoré', 'directeur_ecole',
-   'Centre-Nord', 'Sanmatenga', 'Kaya', 'Manéssè', 'CEG Manéssè', 'infrastructure', 4,
-   'Effectifs réels confirmés : 1 240 élèves contre 910 déclarés au recensement officiel. Doubles places dans les salles d''admission. 4 des 10 salles de classe accueillent 54 élèves à 3 par table-banc double. Pas de cantine : les élèves affamés perdent la concentration l''après-midi.',
-   'Jardin maraîcher scolaire d''autosuffisance pour la cantine, piloté par l''enseignant d''agriculture et l''Association Villageoise de Développement, avec revenus réinvestis dans les repas.',
-   'nouveau', '2026-11-06T08:00:00Z'),
-  ('a1000000-0000-0000-0000-000000000008', null, 'Adama Ouattara', 'representant_parents',
-   'Centre-Ouest', 'Boulkiemdé', 'Koudougou', 'Zondoma', 'CES Zondoma', 'decrochage', 4,
-   'Les adolescents vont travailler dans les sites d''orpaillage artisanal de Zondoma pendant la saison sèche. Sur les 40 élèves marqués absents ce trimestre, 23 sont partis aux sites miniers. Les familles plient sous les frais annexes de l''école.',
-   'Cours-relais hors site : capsules de cours partagées par WhatsApp audio depuis les sites d''orpaillage, suivi signé par l''encadreur communal et l''APE.',
+  ('a1000000-0000-0000-0000-000000000005', null, 'Adama Ouattara', 'representant_parents',
+   'Centre-Ouest', 'Boulkiemdé', 'Koudougou', 'Zondoma', 'CES Zondoma', 'decrochage',
+   ARRAY['orpaillage_transhumance','difficultes_financieres'], 23, 4,
+   'Les adolescents partent sur les sites d''orpaillage de Zondoma pour la saison sèche. Sur les 40 élèves marqués absents ce trimestre, 23 sont partis aux sites miniers. Les familles plient sous les frais annexes.',
    'en_analyse', '2026-11-02T19:55:00Z'),
-  ('a1000000-0000-0000-0000-000000000009', null, 'Awa Tapsoba', 'enseignant',
-   'Centre-Est', 'Kouritenga', 'Koupéla', 'Tankoussou', 'ÉPP Tankoussou', 'infrastructure', 3,
-   'L''école fonctionne avec 12 tables-bancs pour une classe de 68 en CI. Les enfants s''assoient par terre depuis février. L''APE a sollicité 3 fois la CVD. Le bureau n''a plus de marqueurs, les ardoises sont consommées.',
-   'Banc fabriqué par les forgerons locaux à base d''acier de recyclage à 12 500 FCFA/unité sous plan de charge communal',
-   'transmis_bureau', '2026-11-01T10:20:00Z'),
-  ('a1000000-0000-0000-0000-000000000010', null, 'Yacouba Compaoré', 'directeur_ecole',
-   'Sahel', 'Oudalan', 'Tin-Akoff', 'Tin-Akoff', 'École Primaire Tin-Akoff', 'securite', 5,
-   'École proche de la frontière malienne : fermetures intermittente liée aux déplacements transfrontaliers. Enseignants non résidents absents 3 jours sur 5. Aucun service de sécurité autour de l''école. Situation critique depuis octobre.',
-   'École-relais polyvalente résidente : logements des maîtres + panneau solaire + stocks de cantine pour 3 mois, école ouverte même en période d''alerte (protocole ministériel).',
+  ('a1000000-0000-0000-0000-000000000006', null, 'Issouf Traoré', 'directeur_ecole',
+   'Centre-Nord', 'Sanmatenga', 'Kaya', 'Manéssè', 'CEG Manéssè', 'decrochage',
+   ARRAY['difficultes_financieres','absenteisme_repete'], 41, 4,
+   'Pas de cantine : les élèves affamés désertent l''après-midi. 41 élèves dépassent les 2 semaines d''absence consécutives ce trimestre. Six familles ont signalé qu''elles n''envoient plus les grands enfants car ils préparent la saison des champs.',
+   'nouveau', '2026-11-06T08:00:00Z'),
+  ('a1000000-0000-0000-0000-000000000007', null, 'Yacouba Compaoré', 'directeur_ecole',
+   'Sahel', 'Oudalan', 'Tin-Akoff', 'Tin-Akoff', 'École Primaire Tin-Akoff', 'decrochage',
+   ARRAY['choc_securitaire','abandon_silencieux','absenteisme_repete'], 27, 5,
+   'École proche de la frontière malienne : fermetures intermittentes, enseignants non résidents absents 3 jours sur 5. 27 enfants n''ont plus été vus depuis octobre, les familles ont probablement rejoint les camps de déplacés.',
    'verifie', '2026-11-05T05:40:00Z'),
-  ('a1000000-0000-0000-0000-000000000011', null, 'Hakim Diarra', 'enseignant',
-   'Boucle du Mouhoun', 'Mouhoun', 'Dédougou', 'Abalama', 'CEG Abalama', 'pedagogie', 2,
-   'Absence d''outils d''évaluation diagnostique dès la 6e. Les nouveaux arrivants des écoles franco-arabes et des écoles communautaires n''ont pas le même niveau. 45% des élèves redoublent.',
-   'Banque d''évaluations diagnostiques partagées par commune sur EDUGov-Bridge avec données animées par IA pour orienter classement auprès des enseignants',
+  ('a1000000-0000-0000-0000-000000000008', null, 'Marie Ouédraogo', 'inspecteur',
+   'Plateau-Central', 'Ganzourgou', 'Zorgho', 'Gongzoungou', 'ÉPP Gongzoungou', 'decrochage',
+   ARRAY['choc_climatique','absenteisme_repete'], 15, 3,
+   'Les inondations du barrage ont détruit 14 cases du village. Les enfants affectés travaillent dans les champs de reconstitution. Abandon croissant en CM2 pendant la saison maraîchère, aucun dispositif d''encadrement.',
+   'nouveau', '2026-11-06T16:30:00Z'),
+  ('a1000000-0000-0000-0000-000000000009', null, 'Hakim Diarra', 'enseignant',
+   'Boucle du Mouhoun', 'Mouhoun', 'Dédougou', 'Abalama', 'CEG Abalama', 'decrochage',
+   ARRAY['difficultes_financieres','mariage_grossesse_precoce'], 8, 3,
+   'Huit élèves filles de 4e signalées par leurs camarades comme promises en mariage avant la fin de l''année. Deux ont déjà arrêté de venir. Les frais d''inscription du CQEB sont pointés par les familles comme élément déclencheur.',
    'nouveau', '2026-11-04T13:00:00Z'),
-  ('a1000000-0000-0000-0000-000000000012', null, 'Marie Ouédraogo', 'inspecteur',
-   'Plateau-Central', 'Ganzourgou', 'Zorgho', 'Gongzoungou', 'ÉPP Gongzoungou', 'decrochage', 3,
-   'Les travaux du barrage agricole ont attiré les familles : classes surchargées. Certains enfants vivent avec un seul parent, abandon croissant en CM2 et au CQE pendant la saison maraîchère. Pas de dispositif d''encadrement.',
-   'Carte scolaire dynamique par IA recalculée chaque trimestre selon les flux migratoires découverts via les signalements EDUGov-Bridge',
-   'nouveau', '2026-11-06T16:30:00Z')
+  ('a1000000-0000-0000-0000-000000000010', null, 'Awa Tapsoba', 'enseignant',
+   'Est', 'Gourma', 'Matiakoali', 'Nignan', 'CEG Matiakoali', 'decrochage',
+   ARRAY['choc_securitaire','orpaillage_transhumance','absenteisme_repete'], 30, 4,
+   'Convergence orpailleurs + insécurité routière : les convois d''élèves du secteur de Nignan ont totalement cessé depuis l''embuscade de la RN-19. 30 élèves concernés, les aînés emmenés aux sites miniers du kebbi.',
+   'en_analyse', '2026-11-01T10:20:00Z'),
+  ('a1000000-0000-0000-0000-000000000011', null, 'Dr. Salif Nikièma', 'inspecteur',
+   'Est', 'Gourma', 'Fada N''Gourma', 'Zanlougou', 'CES Zanlougou', 'decrochage',
+   ARRAY['absenteisme_repete','difficultes_financieres'], 11, 3,
+   'Suivi de cohortes : 11 élèves de 3e ont manqué plus de 15 jours depuis la rentrée, tous issus de familles d''éleveurs touchées par la maisonnée partie en transhumance précoce.',
+   'nouveau', '2026-11-06T11:20:00Z'),
+  ('a1000000-0000-0000-0000-000000000012', null, 'Rasmané Kaboré', 'enseignant',
+   'Centre', 'Kadiogo', 'Ouagadougou', 'Gounghin', 'CES Gounghin', 'decrochage',
+   ARRAY['difficultes_financieres','absenteisme_repete'], 17, 4,
+   'Zone d''accueil des déplacés internes : 17 élèves du secteur Gounghin viennent de familles expulsées de leur logement, absents par roulement faute de transport. Deux filles vendent au marché le matin au lieu d''aller en cours.',
+   'nouveau', '2026-11-05T21:45:00Z')
 on conflict (id) do nothing;
 
 -- ╔════════════════════════════════════════════════════════════════╗
