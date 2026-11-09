@@ -1,0 +1,336 @@
+import type {
+  Consultation,
+  ReponseConsultation,
+  Signalement,
+} from "@/types/database";
+
+// ─────────────────────────────────────────────────────────────────
+// Données de démonstration réalistes — utilisées tant que Supabase
+// n'est pas configuré (garantit un plateau de démo prêt pour le jury,
+// même sans backend).
+// ─────────────────────────────────────────────────────────────────
+
+export const DEMO_SIGNALEMENTS: Signalement[] = [
+  {
+    id: "demo-01",
+    profil_id: null,
+    emetteur: "Aïcha Ouédraogo",
+    role_emetteur: "enseignant",
+    region: "Sahel",
+    province: "Séno",
+    commune: "Dori",
+    village_secteur: "Falagountou",
+    etablissement: "CEG Falagountou",
+    categorie: "decrochage",
+    gravite: 5,
+    description:
+      "On constate depuis novembre un abandon massif des filles en 6e et 5e : sur 52 filles inscrites, 19 ne reviennent plus. Les parents préfèrent envoyer les enfants garder le bétail pendant la période de transhumance. Les cours du soir ne fonctionnent plus faute de lampes solaires.",
+    proposition_innovation:
+      "Clubs de parrainage scolaire : chaque chef de famille notable parraine 3 filles (kit solaire + cantine) et un suivi trimestriel par l'APE.",
+    statut: "nouveau",
+    created_at: "2026-11-04T09:12:00Z",
+  },
+  {
+    id: "demo-02",
+    profil_id: null,
+    emetteur: "Boureima Sawadogo",
+    role_emetteur: "directeur_ecole",
+    region: "Hauts-Bassins",
+    province: "Houet",
+    commune: "Bobo-Dioulasso",
+    village_secteur: "Sarfalao",
+    etablissement: "CES Sarfalao",
+    categorie: "infrastructure",
+    gravite: 4,
+    description:
+      "Inventaire d'urgence : sur 32 salles utilisables, 9 ont la toiture endommagée depuis la saison des pluies. 720 élèves assis sur des tables-bancs pour 400 places réelles. Le bloc de latrines (6 cases pour 960 élèves) est saturé, les filles quittent l'école pour rentrer chez elles.",
+    proposition_innovation:
+      "Convention communale réhabilitation : mobiliser les artisans locaux (maçons-ferblantiers formés) avec un chèque-kit matériaux, dossiers prêts à l'emploi.",
+    statut: "en_analyse",
+    created_at: "2026-11-05T14:30:00Z",
+  },
+  {
+    id: "demo-03",
+    profil_id: null,
+    emetteur: "Rasmané Kaboré",
+    role_emetteur: "enseignant",
+    region: "Centre",
+    province: "Kadiogo",
+    commune: "Ouagadougou",
+    village_secteur: "Gounghin",
+    etablissement: "CES Gounghin",
+    categorie: "pedagogie",
+    gravite: 3,
+    description:
+      "36 élèves par classe sur les langues, tests de positionnement montrant 60% d'élèves fonctionnellement illettrés en français en 4e. Les manuels du programme bilingue sont épuisés depuis deux ans et rien pour compenser.",
+    proposition_innovation:
+      "Bibliothèque de classe numérique open-source sur tablettes rechargeables (100 livres copyright-free français/fulfuldé/mooré), kit cédé par la coopérative des enseignants",
+    statut: "nouveau",
+    created_at: "2026-11-05T21:45:00Z",
+  },
+  {
+    id: "demo-04",
+    profil_id: null,
+    emetteur: "Fadima Sanogo",
+    role_emetteur: "representant_parents",
+    region: "Sahel",
+    province: "Séno",
+    commune: "Gorom-Gorom",
+    village_secteur: "Anderka-Bouyam",
+    etablissement: "ÉPP Anderka-Bouyam",
+    categorie: "securite",
+    gravite: 5,
+    description:
+      "Depuis les incidents de l'école primaire d'Anderka-Bouyam, les enfants marchent 12 km pour se rendre à l'école, certains passent la nuit dehors. Point d'eau non sécurisé. Trois familles ont retiré tous leurs enfants (9 élèves) de l'école.",
+    proposition_innovation:
+      "Convois scolaires communautaires organisés par l'APE avec accompagnateurs tournants, abris-vigie aux points critiques financés par la tontine du village.",
+    statut: "verifie",
+    created_at: "2026-11-06T06:05:00Z",
+  },
+  {
+    id: "demo-05",
+    profil_id: null,
+    emetteur: "Dr. Salif Nikièma",
+    role_emetteur: "inspecteur",
+    region: "Est",
+    province: "Gourma",
+    commune: "Fada N'Gourma",
+    village_secteur: "Zanlougou",
+    etablissement: "CES Zanlougou",
+    categorie: "pedagogie",
+    gravite: 3,
+    description:
+      "Diagnostic qualité : sur les 8 enseignants suivis, 5 sont contractuels non formés à la didactique des mathématiques. Taux moyen de réussite au BEPC de la commune : 24% contre 52% il y a 4 ans. Aucun stage de renforcement depuis 2023.",
+    proposition_innovation:
+      "Pair-à-pédagogie : jumeler les contractuels avec des enseignants titulaires expérimentés contre des crédits de formation validés par l'inspection.",
+    statut: "nouveau",
+    created_at: "2026-11-06T11:20:00Z",
+  },
+  {
+    id: "demo-06",
+    profil_id: null,
+    emetteur: "Nafissata Zongo",
+    role_emetteur: "enseignant",
+    region: "Sud-Ouest",
+    province: "Nahouri",
+    commune: "Pô",
+    village_secteur: "Bicouré",
+    etablissement: "ÉPP Bicouré",
+    categorie: "genre_rural",
+    gravite: 4,
+    description:
+      "12 filles mariées en CM1-CM2 cette année sur une seule classe. L'école n'a aucun bloc sanitaire privé pour les adolescentes ni kit d'hygiène. Les redoublements répétés masculinisent la classe.",
+    proposition_innovation:
+      "Bourse conditionnelle gérée par l'APE : versement mensuel aux filles si présence ≥85% + sanction sociale positive (tableau d'honneur des mères)",
+    statut: "nouveau",
+    created_at: "2026-11-03T17:10:00Z",
+  },
+  {
+    id: "demo-07",
+    profil_id: null,
+    emetteur: "Issouf Traoré",
+    role_emetteur: "directeur_ecole",
+    region: "Centre-Nord",
+    province: "Sanmatenga",
+    commune: "Kaya",
+    village_secteur: "Manéssè",
+    etablissement: "CEG Manéssè",
+    categorie: "infrastructure",
+    gravite: 4,
+    description:
+      "Effectifs réels confirmés : 1 240 élèves contre 910 déclarés au recensement officiel. Doubles places dans les salles d'admission. 4 des 10 salles de classe accueillent 54 élèves à 3 par table-banc double. Pas de cantine : les élèves affamés perdent la concentration l'après-midi.",
+    proposition_innovation:
+      "Jardin maraîcher scolaire d'autosuffisance pour la cantine, piloté par l'enseignant d'agriculture et l'Association Villageoise de Développement, avec revenus réinvestis dans les repas.",
+    statut: "nouveau",
+    created_at: "2026-11-06T08:00:00Z",
+  },
+  {
+    id: "demo-08",
+    profil_id: null,
+    emetteur: "Adama Ouattara",
+    role_emetteur: "representant_parents",
+    region: "Centre-Ouest",
+    province: "Boulkiemdé",
+    commune: "Koudougou",
+    village_secteur: "Zondoma",
+    etablissement: "CES Zondoma",
+    categorie: "decrochage",
+    gravite: 4,
+    description:
+      "Les adolescents vont travailler dans les sites d'orpaillage artisanal de Zondoma pendant la saison sèche. Sur les 40 élèves marqués absents ce trimestre, 23 sont partis aux sites miniers. Les familles plient sous les frais annexes de l'école.",
+    proposition_innovation:
+      "Cours-relais hors site : capsules de cours partagées par WhatsApp audio depuis les sites d'orpaillage, suivi signé par l'encadreur communal et l'APE.",
+    statut: "en_analyse",
+    created_at: "2026-11-02T19:55:00Z",
+  },
+  {
+    id: "demo-09",
+    profil_id: null,
+    emetteur: "Awa Tapsoba",
+    role_emetteur: "enseignant",
+    region: "Centre-Est",
+    province: "Kouritenga",
+    commune: "Koupéla",
+    village_secteur: "Tankoussou",
+    etablissement: "ÉPP Tankoussou",
+    categorie: "infrastructure",
+    gravite: 3,
+    description:
+      "L'école fonctionne avec 12 tables-bancs pour une classe de 68 en CI. Les enfants s'assoient par terre depuis février. L'APE a sollicité 3 fois la CVD. Le bureau n'a plus de marqueurs, les ardoises sont consommées.",
+    proposition_innovation:
+      "Banc fabriqué par les forgerons locaux à base d'acier de recyclage à 12 500 FCFA/unité sous plan de charge communal",
+    statut: "transmis_bureau",
+    created_at: "2026-11-01T10:20:00Z",
+  },
+  {
+    id: "demo-10",
+    profil_id: null,
+    emetteur: "Yacouba Compaoré",
+    role_emetteur: "directeur_ecole",
+    region: "Sahel",
+    province: "Oudalan",
+    commune: "Tin-Akoff",
+    village_secteur: "Tin-Akoff",
+    etablissement: "École Primaire Tin-Akoff",
+    categorie: "securite",
+    gravite: 5,
+    description:
+      "École proche de la frontière malienne : fermetures intermittente liée aux déplacements transfrontaliers. Enseignants non résidents absents 3 jours sur 5. Aucun service de sécurité autour de l'école. Situation critique depuis octobre.",
+    proposition_innovation:
+      "École-relais polyvalente résidente : logements des maîtres + panneau solaire + stocks de cantine pour 3 mois, école ouverte même en période d'alerte (protocole ministériel).",
+    statut: "verifie",
+    created_at: "2026-11-05T05:40:00Z",
+  },
+  {
+    id: "demo-11",
+    profil_id: null,
+    emetteur: "Hakim Diarra",
+    role_emetteur: "enseignant",
+    region: "Boucle du Mouhoun",
+    province: "Mouhoun",
+    commune: "Dédougou",
+    village_secteur: "Abalama",
+    etablissement: "CEG Abalama",
+    categorie: "pedagogie",
+    gravite: 2,
+    description:
+      "Absence d'outils d'évaluation diagnostique dès la 6e. Les nouveaux arrivants des écoles franco-arabes et des écoles communautaires n'ont pas le même niveau. 45% des élèves redoublent.",
+    proposition_innovation:
+      "Banque d'évaluations diagnostiques partagées par commune sur EDUGov-Bridge avec données animées par IA pour orienter classement auprès des enseignants",
+    statut: "nouveau",
+    created_at: "2026-11-04T13:00:00Z",
+  },
+  {
+    id: "demo-12",
+    profil_id: null,
+    emetteur: "Marie Ouédraogo",
+    role_emetteur: "inspecteur",
+    region: "Plateau-Central",
+    province: "Ganzourgou",
+    commune: "Zorgho",
+    village_secteur: "Gongzoungou",
+    etablissement: "ÉPP Gongzoungou",
+    categorie: "decrochage",
+    gravite: 3,
+    description:
+      "Les travaux du barrage agricole ont attiré les familles : classes surchargées. Certains enfants vivent avec un seul parent, abandon croissant en CM2 et au CQE pendant la saison maraîchère. Pas de dispositif d'encadrement.",
+    proposition_innovation:
+      "Carte scolaire dynamique par IA recalculée chaque trimestre selon les flux migratoires découverts via les signalements EDUGov-Bridge",
+    statut: "nouveau",
+    created_at: "2026-11-06T16:30:00Z",
+  },
+];
+
+export const DEMO_CONSULTATIONS: Consultation[] = [
+  {
+    id: "demo-c1",
+    titre: "Plan Cantines URGENT — Sahel & Centre-Nord",
+    question:
+      "Comment votre établissement pourrait-il contribuer (jardin scolaire, tontine parents, partenariat local) à sécuriser au moins un repas chaud par jour pour 50 élèves supplémentaires d'ici la reprise ?",
+    region_cible: "Sahel",
+    province_cible: "Séno",
+    commune_cible: null,
+    date_publication: "2026-11-02T08:00:00Z",
+    date_cloture: "2026-11-30T23:59:00Z",
+    statut: "ouverte",
+  },
+  {
+    id: "demo-c2",
+    titre: "Inventaire éclair toitures / latrines",
+    question:
+      "Directeurs : indiquez le nombre exact de salles à toiture endommagée et de cases de latrines fonctionnelles dans votre établissement, avec photos.",
+    region_cible: "Hauts-Bassins",
+    province_cible: "Houet",
+    commune_cible: null,
+    date_publication: "2026-11-04T10:00:00Z",
+    date_cloture: "2026-11-25T23:59:00Z",
+    statut: "ouverte",
+  },
+  {
+    id: "demo-c3",
+    titre: "Maintien des filles à l'école",
+    question:
+      "Quelles mesures locales concrètes (sanitaires, bourses, calendriers adaptés) peuvent faire reculer le mariage précoce dans NOS communes d'ici 2027 ?",
+    region_cible: "Sud-Ouest",
+    province_cible: "Nahouri",
+    commune_cible: "Pô",
+    date_publication: "2026-10-28T09:00:00Z",
+    date_cloture: "2026-12-05T23:59:00Z",
+    statut: "ouverte",
+  },
+];
+
+export const DEMO_REPONSES: ReponseConsultation[] = [
+  {
+    id: "demo-r1",
+    consultation_id: "demo-c1",
+    role_emetteur: "directeur_ecole",
+    emetteur: "B. Sawadogo",
+    region: "Sahel",
+    province: "Séno",
+    commune: "Dori",
+    etablissement: "Lycée Provincial de Dori",
+    contenu:
+      "1 ha de jardin scolaire identifié à côté. Association de femmes du village prête à cuisiner. Coût estimé : 180 000 FCFA/mois décision prudente stockage aliments.",
+    created_at: "2026-11-03T09:00:00Z",
+  },
+  {
+    id: "demo-r2",
+    consultation_id: "demo-c1",
+    role_emetteur: "representant_parents",
+    emetteur: "A. Ouattara (APE)",
+    region: "Centre-Nord",
+    province: "Sanmatenga",
+    commune: "Barsalogho",
+    etablissement: "CEG Barsalogho",
+    contenu:
+      "Tontine APE 75 sacs maïs consignés en entrepôt communal, prêts à enlever. Manque juste un moulin à grains et une femme de service paratoire.",
+    created_at: "2026-11-04T15:20:00Z",
+  },
+  {
+    id: "demo-r3",
+    consultation_id: "demo-c2",
+    role_emetteur: "directeur_ecole",
+    emetteur: "I. Traoré",
+    region: "Hauts-Bassins",
+    province: "Houet",
+    commune: "Bobo-Dioulasso",
+    etablissement: "ÉPP Binja III",
+    contenu:
+      "7 salles sur 11 à toiture endommagée. 2 latrines fonctionnelles sur 8 cases. Photos jointes + devis maçon local 2 400 000 FCFA.",
+    created_at: "2026-11-05T11:00:00Z",
+  },
+  {
+    id: "demo-r4",
+    consultation_id: "demo-c3",
+    role_emetteur: "enseignant",
+    emetteur: "N. Zongo",
+    region: "Sud-Ouest",
+    province: "Nahouri",
+    commune: "Pô",
+    etablissement: "ÉPP Bicouré",
+    contenu:
+      "Sanitaires filles séparées + douchette hygiene menstruelle obligatoire. Implication matrones du village comme médiatrices.",
+    created_at: "2026-11-05T18:00:00Z",
+  },
+];

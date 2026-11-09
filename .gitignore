@@ -1,0 +1,26 @@
+# Dépendances
+node_modules/
+
+# Next.js
+.next/
+out/
+next-env.d.ts
+
+# Build TypeScript
+tsconfig.tsbuildinfo
+
+# Variables d'environnement (clés Supabase / IA — JAMAIS committer)
+.env
+.env.local
+.env*.local
+.env.production
+
+# OS / éditeurs
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Logs
+npm-debug.log*
+pnpm-debug.log*

@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sans: "Inter", "Segoe UI", system-ui, sans-serif;
+  color-scheme: light;
+}
+
+body {
+  @apply bg-surface text-slate-800 antialiased;
+}
+
+/* Scrollbar institutionnelle discrète */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  @apply rounded-full bg-slate-300;
+}
+
+/* Bandeau "Burkina" décoratif rouge / or / vert */
+.band-ruban {
+  background: linear-gradient(to right, #ef2b2d 33.3%, #fcd116 33.3%, #fcd116 66.6%, #009e49 66.6%);
+  height: 4px;
+}
