@@ -123,6 +123,9 @@ export function lireSessionCookie(brut: string | undefined): SessionUtilisateur 
   }
 }
 
+/** URL secrète et privée réservée à l'accès ministériel (hors de portée du public et du corps enseignant) */
+export const URL_MINISTERE_PRIVE = "/cabinet-confidentiel-bf";
+
 /** Espace de travail d'un profil selon son type de compte */
 export function espaceDe(s: SessionUtilisateur | null): "/terrain" | "/ministere" | "/auth" {
   if (!s) return "/auth";

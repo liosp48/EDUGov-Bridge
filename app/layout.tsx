@@ -29,9 +29,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </span>
             </Link>
             <nav className="flex items-center gap-2 sm:gap-4">
-              {/* Espace public : seule l'option d'authentification est exposée.
-                  Les espaces internes (/terrain, /ministere) ne sont jamais
-                  listés ici et restent contrôlés par le middleware serveur. */}
               <NavSession />
             </nav>
           </div>

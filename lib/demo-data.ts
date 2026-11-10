@@ -1,13 +1,15 @@
-import type {
+﻿import type {
   Consultation,
   ReponseConsultation,
   Signalement,
+  UserRole,
 } from "@/types/database";
 
 // ─────────────────────────────────────────────────────────────────
 // Données de démonstration — DÉFI 1 : DÉCROCHAGE SCOLAIRE
 // Utilisées tant que Supabase n'est pas configuré (garantit un
 // plateau de démo prêt pour le jury, même sans backend).
+// Géographie alignée sur le référentiel officiel 2025 (lib/geographie.ts).
 // ─────────────────────────────────────────────────────────────────
 
 export const DEMO_SIGNALEMENTS: Signalement[] = [
@@ -16,7 +18,7 @@ export const DEMO_SIGNALEMENTS: Signalement[] = [
     profil_id: null,
     emetteur: "Aïcha Ouédraogo",
     role_emetteur: "enseignant",
-    region: "Sahel",
+    region: "Liptako",
     province: "Séno",
     commune: "Dori",
     village_secteur: "Falagountou",
@@ -35,8 +37,8 @@ export const DEMO_SIGNALEMENTS: Signalement[] = [
     profil_id: null,
     emetteur: "Boureima Sawadogo",
     role_emetteur: "directeur_ecole",
-    region: "Centre-Nord",
-    province: "Sanmatenga",
+    region: "Kuilsé",
+    province: "Sandbondtenga",
     commune: "Barsalogho",
     village_secteur: "Namissiguima",
     etablissement: "ÉPP Namissiguima",
@@ -54,7 +56,7 @@ export const DEMO_SIGNALEMENTS: Signalement[] = [
     profil_id: null,
     emetteur: "Fadima Sanogo",
     role_emetteur: "representant_parents",
-    region: "Sahel",
+    region: "Liptako",
     province: "Séno",
     commune: "Gorom-Gorom",
     village_secteur: "Anderka-Bouyam",
@@ -73,7 +75,7 @@ export const DEMO_SIGNALEMENTS: Signalement[] = [
     profil_id: null,
     emetteur: "Nafissata Zongo",
     role_emetteur: "enseignant",
-    region: "Sud-Ouest",
+    region: "Nazinon",
     province: "Nahouri",
     commune: "Pô",
     village_secteur: "Bicouré",
@@ -92,7 +94,7 @@ export const DEMO_SIGNALEMENTS: Signalement[] = [
     profil_id: null,
     emetteur: "Adama Ouattara",
     role_emetteur: "representant_parents",
-    region: "Centre-Ouest",
+    region: "Nando",
     province: "Boulkiemdé",
     commune: "Koudougou",
     village_secteur: "Zondoma",
@@ -111,8 +113,8 @@ export const DEMO_SIGNALEMENTS: Signalement[] = [
     profil_id: null,
     emetteur: "Issouf Traoré",
     role_emetteur: "directeur_ecole",
-    region: "Centre-Nord",
-    province: "Sanmatenga",
+    region: "Kuilsé",
+    province: "Sandbondtenga",
     commune: "Kaya",
     village_secteur: "Manéssè",
     etablissement: "CEG Manéssè",
@@ -130,7 +132,7 @@ export const DEMO_SIGNALEMENTS: Signalement[] = [
     profil_id: null,
     emetteur: "Yacouba Compaoré",
     role_emetteur: "directeur_ecole",
-    region: "Sahel",
+    region: "Liptako",
     province: "Oudalan",
     commune: "Tin-Akoff",
     village_secteur: "Tin-Akoff",
@@ -149,7 +151,7 @@ export const DEMO_SIGNALEMENTS: Signalement[] = [
     profil_id: null,
     emetteur: "Marie Ouédraogo",
     role_emetteur: "inspecteur",
-    region: "Plateau-Central",
+    region: "Oubri",
     province: "Ganzourgou",
     commune: "Zorgho",
     village_secteur: "Gongzoungou",
@@ -168,7 +170,7 @@ export const DEMO_SIGNALEMENTS: Signalement[] = [
     profil_id: null,
     emetteur: "Hakim Diarra",
     role_emetteur: "enseignant",
-    region: "Boucle du Mouhoun",
+    region: "Bankui",
     province: "Mouhoun",
     commune: "Dédougou",
     village_secteur: "Abalama",
@@ -187,11 +189,11 @@ export const DEMO_SIGNALEMENTS: Signalement[] = [
     profil_id: null,
     emetteur: "Awa Tapsoba",
     role_emetteur: "enseignant",
-    region: "Est",
+    region: "Goulmou",
     province: "Gourma",
-    commune: "Matiakoali",
+    commune: "Matiacoali",
     village_secteur: "Nignan",
-    etablissement: "CEG Matiakoali",
+    etablissement: "CEG Matiacoali",
     categorie: "decrochage",
     indicateurs: ["choc_securitaire", "orpaillage_transhumance", "absenteisme_repete"],
     nb_eleves_risque: 30,
@@ -206,7 +208,7 @@ export const DEMO_SIGNALEMENTS: Signalement[] = [
     profil_id: null,
     emetteur: "Dr. Salif Nikièma",
     role_emetteur: "inspecteur",
-    region: "Est",
+    region: "Goulmou",
     province: "Gourma",
     commune: "Fada N'Gourma",
     village_secteur: "Zanlougou",
@@ -225,7 +227,7 @@ export const DEMO_SIGNALEMENTS: Signalement[] = [
     profil_id: null,
     emetteur: "Rasmané Kaboré",
     role_emetteur: "enseignant",
-    region: "Centre",
+    region: "Kadiogo",
     province: "Kadiogo",
     commune: "Ouagadougou",
     village_secteur: "Gounghin",
@@ -244,10 +246,10 @@ export const DEMO_SIGNALEMENTS: Signalement[] = [
 export const DEMO_CONSULTATIONS: Consultation[] = [
   {
     id: "demo-c1",
-    titre: "Plan Cantines URGENT — Sahel & Centre-Nord",
+    titre: "Plan Cantines URGENT — Liptako & Kuilsé",
     question:
       "Comment votre établissement pourrait-il contribuer (jardin scolaire, tontine parents, partenariat local) à sécuriser au moins un repas chaud par jour pour 50 élèves supplémentaires d'ici la reprise ?",
-    region_cible: "Sahel",
+    region_cible: "Liptako",
     province_cible: "Séno",
     commune_cible: null,
     date_publication: "2026-11-02T08:00:00Z",
@@ -271,8 +273,8 @@ export const DEMO_CONSULTATIONS: Consultation[] = [
     titre: "Élèves invisibles — traque de l'abandon silencieux",
     question:
       "Quelles méthodes locales (tournées APE, appels communautaires, relais religieux) permettent de retrouver la trace d'un élève disparu des registres en moins de 7 jours ?",
-    region_cible: "Centre-Nord",
-    province_cible: "Sanmatenga",
+    region_cible: "Kuilsé",
+    province_cible: "Sandbondtenga",
     commune_cible: null,
     date_publication: "2026-10-28T09:00:00Z",
     date_cloture: "2026-12-05T23:59:00Z",
@@ -286,7 +288,7 @@ export const DEMO_REPONSES: ReponseConsultation[] = [
     consultation_id: "demo-c1",
     role_emetteur: "directeur_ecole",
     emetteur: "B. Sawadogo",
-    region: "Sahel",
+    region: "Liptako",
     province: "Séno",
     commune: "Dori",
     etablissement: "Lycée Provincial de Dori",
@@ -299,8 +301,8 @@ export const DEMO_REPONSES: ReponseConsultation[] = [
     consultation_id: "demo-c1",
     role_emetteur: "representant_parents",
     emetteur: "A. Ouattara (APE)",
-    region: "Centre-Nord",
-    province: "Sanmatenga",
+    region: "Kuilsé",
+    province: "Sandbondtenga",
     commune: "Barsalogho",
     etablissement: "CEG Barsalogho",
     contenu:
@@ -312,7 +314,7 @@ export const DEMO_REPONSES: ReponseConsultation[] = [
     consultation_id: "demo-c2",
     role_emetteur: "enseignant",
     emetteur: "N. Zongo",
-    region: "Sud-Ouest",
+    region: "Nazinon",
     province: "Nahouri",
     commune: "Pô",
     etablissement: "ÉPP Bicouré",
@@ -325,7 +327,7 @@ export const DEMO_REPONSES: ReponseConsultation[] = [
     consultation_id: "demo-c3",
     role_emetteur: "representant_parents",
     emetteur: "F. Sanogo (APE)",
-    region: "Sahel",
+    region: "Liptako",
     province: "Séno",
     commune: "Gorom-Gorom",
     etablissement: "ÉPP Anderka-Bouyam",
@@ -334,3 +336,63 @@ export const DEMO_REPONSES: ReponseConsultation[] = [
     created_at: "2026-11-05T19:30:00Z",
   },
 ];
+
+// ─────────────────────────────────────────────────────────────────
+// Matricules de démonstration officiels du challenge (garantis
+// 100% opérationnels côté connexion/inscription)
+// ─────────────────────────────────────────────────────────────────
+
+export const AGENTS_DEMO_DATA: Record<
+  string,
+  {
+    nom: string;
+    prenom: string;
+    email: string;
+    role: UserRole;
+    region: string;
+    province: string;
+    commune: string;
+    etablissement: string;
+  }
+> = {
+  "MEN-2026-0031": {
+    nom: "OUEDRAOGO",
+    prenom: "Aïcha Marie",
+    email: "aicha.ouedraogo@menapln.bf",
+    role: "directeur_ecole",
+    region: "Liptako",
+    province: "Séno",
+    commune: "Dori",
+    etablissement: "École Primaire Publique Dori A",
+  },
+  "MEN-2026-0457": {
+    nom: "SAWADOGO",
+    prenom: "Ibrahim",
+    email: "ibrahim.sawadogo@menapln.bf",
+    role: "enseignant",
+    region: "Kadiogo",
+    province: "Kadiogo",
+    commune: "Ouagadougou",
+    etablissement: "Lycée Mixte de Gounghin",
+  },
+  "MEN-2026-1284": {
+    nom: "KABORE",
+    prenom: "Fatimata",
+    email: "fatimata.kabore@menapln.bf",
+    role: "inspecteur",
+    region: "Guiriko",
+    province: "Houet",
+    commune: "Bobo-Dioulasso",
+    etablissement: "Circonscription d'Éducation de Base Bobo 1",
+  },
+  "MEN-2026-2210": {
+    nom: "YAMEOGO",
+    prenom: "Boureima",
+    email: "boureima.yameogo@menapln.bf",
+    role: "representant_parents",
+    region: "Kuilsé",
+    province: "Sandbondtenga",
+    commune: "Kaya",
+    etablissement: "Comité COGES Kaya Secteur 4",
+  },
+};

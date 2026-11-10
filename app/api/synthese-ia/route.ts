@@ -28,7 +28,7 @@ interface BodyBrief {
 }
 
 /** Contexte éducatif burkinabè injecté au modèle pour ancrer l'analyse */
-const CONTEXTE_NATIONAL = `Contexte : Burkina Faso, Défi n°1 — Anticipation et lutte contre le décrochage scolaire. Situation de sécurité dégradée (Sahel, Est, Centre-Nord) avec fermetures d'écoles et déplacements de populations, orpaillage artisanal qui attire les adolescents en saison sèche, transhumance, mariages et grossesses précoces en zone rurale, difficultés financières des familles (frais annexes), chocs climatiques (inondations, sécheresse). Unité monétaire : franc CFA (FCFA). Langues locales : mooré, dioula, fulfuldé. Ministères concernés : Éducation Nationale (MENAPLN) × Transition Digitale.`;
+const CONTEXTE_NATIONAL = `Contexte : Burkina Faso, Défi n°1 — Anticipation et lutte contre le décrochage scolaire. Référentiel administratif 2025 : 17 régions à toponymes endogènes (Kadiogo, Kuilsé, Liptako, Soum, Goulmou, Sirba, Tapoa, Bankui, Sourou, Nando, Guiriko, Djôrô, Tannounyan, Nakambé, Nazinon, Oubri, Yaadga). Situation de sécurité dégradée (Liptako, Soum, Goulmou, Sirba, Tapoa, Kuilsé, Yaadga) avec fermetures d'écoles et déplacements de populations, orpaillage artisanal qui attire les adolescents en saison sèche, transhumance, mariages et grossesses précoces en zone rurale, difficultés financières des familles (frais annexes), chocs climatiques (inondations, sécheresse). Unité monétaire : franc CFA (FCFA). Langues locales : mooré, dioula, fulfuldé. Ministères concernés : Éducation Nationale (MENAPLN) × Transition Digitale.`;
 
 /** Fenêtre d'analyse : remontées des 7 derniers jours (sinon tout le corpus) */
 function fenetreSeptJours(signalements: Signalement[]): Signalement[] {

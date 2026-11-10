@@ -191,6 +191,41 @@ export interface BriefDecrochage {
   fondement_ia?: boolean;
 }
 
+/** Rapport d'étude IA complet (plusieurs pages, lecture ministérielle) */
+export interface RapportDecrochage {
+  /** 1. Résumé exécutif */
+  resume_executif: string;
+  /** 2. Contexte général : zones et établissements concernés */
+  contexte_general: string;
+  /** 3. Analyse approfondie des observations de terrain (descriptions libres) */
+  analyse_terrain: string;
+  /** 4. Facteurs de déscolarisation classés (économiques, sociaux, sécuritaires…) */
+  facteurs_descolarisation: string[];
+  /** 5. Analyse géographique : régions/provinces/communes les plus concernées */
+  analyse_geographique: string;
+  /** 6. Populations vulnérables (catégories d'élèves les plus exposées) */
+  populations_vulnerables: string;
+  /** 7. Tendances, récurrences et signaux d'alerte */
+  tendances_signaux_alerte: string[];
+  /** 8. Recommandations stratégiques (actions concrètes) */
+  recommandations_strategiques: string[];
+  /** 9. Conclusion et perspectives */
+  conclusion_perspectives: string;
+  /** true si produit par un modèle IA, false = moteur local déterministe */
+  fondement_ia: boolean;
+}
+
+/** Entrée d'historique d'un rapport généré (persistée localement) */
+export interface HistoriqueRapport {
+  id: string;
+  genere_le: string;
+  cible: FiltreGeo;
+  nb_signalements: number;
+  eleves_concernes: number;
+  fenetre_jours: number;
+  rapport: RapportDecrochage;
+}
+
 /** Filtres géographiques partagés */
 export interface FiltreGeo {
   region: string;

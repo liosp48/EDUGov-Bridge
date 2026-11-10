@@ -1,14 +1,12 @@
 import Link from "next/link";
 import { ArrowRight, LogIn, Radar } from "lucide-react";
-import { Badge, Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
+import { Badge, Card, CardHeader, CardTitle } from "@/components/ui";
 import { INDICATEURS_DECROCHAGE } from "@/types/database";
 
 // ─────────────────────────────────────────────────────────────────
 // Page d'accueil publique — MOT D'ORDRE DE LA MISSION (Défi 1)
-// Simple vitrine destinée en priorité au corps éducatif : ici, on
-// annonce la mission et on montre les signaux à surveiller. Les
-// statistiques et résultats restent dans l'espace administrateur
-// gouvernemental, derrière une connexion vérifiée.
+// Vitrine institutionnelle ultra-rapide (rendu statique instantané)
+// destinée au corps éducatif et au grand public.
 // ─────────────────────────────────────────────────────────────────
 
 export default function LandingPage() {
@@ -30,14 +28,7 @@ export default function LandingPage() {
             décrochage scolaire et les remonter, pour qu'aucun enfant ne disparaisse de l'école
             en silence.
           </p>
-          <div className="mt-10 flex justify-center">
-            <Link
-              href="/auth"
-              className="inline-flex h-12 items-center gap-2 rounded-lg bg-white px-6 font-semibold text-institution transition hover:bg-slate-100"
-            >
-              <LogIn size={18} /> Connexion sécurisée
-            </Link>
-          </div>
+
         </div>
       </section>
 
@@ -74,14 +65,7 @@ export default function LandingPage() {
             Vous êtes les yeux de la nation. Connectez-vous avec vos identifiants pour consulter
             le détail de la mission et remonter vos alertes.
           </p>
-          <div className="mt-6 flex justify-center">
-            <Link
-              href="/auth"
-              className="inline-flex h-12 items-center gap-2 rounded-lg bg-institution px-6 font-semibold text-white transition hover:bg-institution-dark"
-            >
-              Accéder à la mission <ArrowRight size={18} />
-            </Link>
-          </div>
+
         </div>
       </section>
     </>

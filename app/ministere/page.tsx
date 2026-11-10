@@ -2,19 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import dynamic from "next/dynamic";
 import {
   AlertTriangle,
-  BrainCircuit,
   ClipboardList,
   Filter,
   Landmark,
@@ -23,11 +13,11 @@ import {
   Megaphone,
   Send,
   ShieldAlert,
-  Sparkles,
   Users,
 } from "lucide-react";
 import KpiCard from "@/components/kpi-card";
 import GeoSelector from "@/components/geo-selector";
+import RapportIA from "@/components/rapport-ia";
 import {
   Badge,
   Button,
@@ -46,7 +36,6 @@ import {
   isSupabaseConfigured,
 } from "@/lib/supabase";
 import {
-  type BriefDecrochage,
   type Consultation,
   type Signalement,
 } from "@/types/database";
@@ -75,6 +64,15 @@ import { Building2, LogOut, ShieldCheck } from "lucide-react";
 
 type Onglet = "strategie" | "brief" | "consultations";
 
+const GraphCauses = dynamic(() => import("@/components/graph-causes"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-full items-center justify-center text-sm text-slate-400">
+      Chargement du graphique…
+    </div>
+  ),
+});
+
 /** Couleur d'une cellule de la carte thermique selon l'IRD (/100) */
 function couleurIRD(ird: number): string {
   if (ird === 0) return "bg-slate-100 text-slate-400";
@@ -92,19 +90,35 @@ export default function MinisterePage() {
   // ── Garde strict : réservé aux décideurs authentifiés via email officiel ──
   useEffect(() => {
     const s = chargerSession();
-    if (!s || s.type_compte !== "gouvernement") {
-      router.replace("/auth");
+    if (!s) {
+      router.replace("/");
+      return;
+    }
+    if (s.type_compte !== "gouvernement") {
+      router.replace("/terrain");
       return;
     }
     setSession(s);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ── Verrouillage de l'historique : empêche le retour arrière vers l'accueil ──
+  useEffect(() => {
+    window.history.pushState(null, "", window.location.href);
+    const bloquerRetour = () => {
+      window.history.pushState(null, "", window.location.href);
+    };
+    window.addEventListener("popstate", bloquerRetour);
+    return () => {
+      window.removeEventListener("popstate", bloquerRetour);
+    };
+  }, []);
+
   const deconnexion = () => {
     void (async () => {
       await deconnexionServeur();
       effacerSession();
-      router.push("/auth");
+      router.replace("/");
       router.refresh();
     })();
   };
@@ -118,10 +132,7 @@ export default function MinisterePage() {
   const [province, setProvince] = useState("");
   const [commune, setCommune] = useState("");
 
-  // Ministre Brief IA (Défi 1)
-  const [brief, setBrief] = useState<BriefDecrochage | null>(null);
-  const [iaEnCours, setIaEnCours] = useState(false);
-  const [iaErreur, setIaErreur] = useState<string | null>(null);
+  // Ministre Brief IA (Défi 1) → délégué au module RapportIA (components/rapport-ia.tsx)
 
   // Lancement de consultation
   const [titreConsult, setTitreConsult] = useState("");
@@ -196,32 +207,6 @@ export default function MinisterePage() {
   const topZones = useMemo(() => zonesTouchees(filtres, "commune").slice(0, 6), [filtres]);
 
   // ── Ministre Brief IA ─────────────────────────────────────────
-  const lancerBrief = async () => {
-    setIaEnCours(true);
-    setIaErreur(null);
-    setBrief(null);
-    try {
-      const res = await fetch("/api/synthese-ia", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          signalements: filtres,
-          cible: {
-            region: region || undefined,
-            province: province || undefined,
-            commune: commune || undefined,
-          },
-        }),
-      });
-      if (!res.ok) throw new Error(`API ${res.status}`);
-      setBrief((await res.json()) as BriefDecrochage);
-    } catch {
-      setIaErreur("Impossible de générer le brief. Vérifiez l'API IA puis réessayez.");
-    } finally {
-      setIaEnCours(false);
-    }
-  };
-
   // ── Lancer une consultation ciblée ────────────────────────────
   const publierConsultation = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -255,7 +240,7 @@ export default function MinisterePage() {
     return (
       <div className="mx-auto flex max-w-xl items-center gap-3 px-4 py-24 text-slate-600">
         <Loader2 className="animate-spin text-institution" size={24} />
-        Vérification de votre accès gouvernemental… redirection vers la connexion sécurisée.
+        Vérification de l'habilitation ministérielle en cours…
       </div>
     );
   }
@@ -472,30 +457,8 @@ export default function MinisterePage() {
                     Aucune donnée sur ce périmètre.
                   </p>
                 ) : (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={parCause} layout="vertical" margin={{ left: 60, right: 16 }}>
-                      <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke="#E2E8F0" />
-                      <XAxis type="number" allowDecimals={false} fontSize={12} />
-                      <YAxis
-                        type="category"
-                        dataKey="nom"
-                        width={180}
-                        fontSize={11}
-                        tickFormatter={(v: string) =>
-                          v.length > 34 ? `${v.slice(0, 33)}…` : v
-                        }
-                      />
-                      <Tooltip />
-                      <Bar
-                        dataKey="alertes"
-                        name="Alertes"
-                        fill="#EF2B2D"
-                        radius={[0, 4, 4, 0]}
-                        barSize={14}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                )}
+                  <GraphCauses data={parCause} />
+                  )}
               </CardContent>
             </Card>
 
@@ -586,125 +549,14 @@ export default function MinisterePage() {
 
       {/* ══════════ MINISTRE BRIEF IA — DÉCROCHAGE ══════════ */}
       {onglet === "brief" && (
-        <div className="mt-6 space-y-6">
-          <Card className="border-2 border-institution/20">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <BrainCircuit className="text-institution" size={24} /> Ministre Brief IA —
-                Décrochage en 1 clic
-              </CardTitle>
-              <p className="text-sm text-slate-600">
-                {filtres.length} alertes du périmètre
-                {region ? ` (${commune || province || region})` : " (national)"} seront analysées
-                pour produire : les zones les plus menacées, les causes principales identifiées par
-                le terrain, et un plan d'action d'urgence.
-              </p>
-            </CardHeader>
-            <CardContent>
-              <Button
-                size="lg"
-                onClick={() => void lancerBrief()}
-                disabled={iaEnCours || filtres.length === 0}
-              >
-                {iaEnCours ? <Loader2 className="animate-spin" size={18} /> : <Sparkles size={18} />}
-                {iaEnCours
-                  ? "Analyse IA en cours — lecture des alertes de la semaine…"
-                  : filtres.length === 0
-                    ? "Aucune alerte à analyser sur ce périmètre"
-                    : "✦ Générer le Brief Stratégique Décrochage"}
-              </Button>
-              {iaErreur && (
-                <p className="mt-4 rounded-lg border border-faso-red/30 bg-faso-red/10 px-4 py-3 text-sm text-faso-red">
-                  {iaErreur}
-                </p>
-              )}
-            </CardContent>
-          </Card>
-
-          {brief && (
-            <div className="space-y-4">
-              <Badge
-                className={
-                  brief.fondement_ia
-                    ? "bg-faso-green/10 text-faso-green"
-                    : "bg-amber-100 text-amber-700"
-                }
-              >
-                {brief.fondement_ia
-                  ? "Généré par IA sur les alertes de la semaine"
-                  : "Analyse locale déterministe (clé IA non configurée) — démo fiable"}
-              </Badge>
-
-              {/* a) Zones les plus menacées */}
-              <Card className="border-l-4 border-l-faso-red">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MapPin size={18} className="text-faso-red" /> a · Zones géographiques les plus
-                    menacées en ce moment
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {brief.zones_menacees.length === 0 ? (
-                    <p className="text-sm text-slate-500">Aucune zone ressortie du corpus.</p>
-                  ) : (
-                    <ol className="space-y-3">
-                      {brief.zones_menacees.map((z, i) => (
-                        <li key={i} className="flex gap-3 text-sm text-slate-700">
-                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-faso-red text-xs font-bold text-white">
-                            {i + 1}
-                          </span>
-                          <span className="leading-relaxed">{z}</span>
-                        </li>
-                      ))}
-                    </ol>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* b) Causes principales */}
-              <Card className="border-l-4 border-l-amber-400">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <AlertTriangle size={18} className="text-amber-500" /> b · Causes principales
-                    identifiées par le terrain
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {brief.causes_principales.length === 0 ? (
-                    <p className="text-sm text-slate-500">Aucune cause ressortie du corpus.</p>
-                  ) : (
-                    <ul className="space-y-2">
-                      {brief.causes_principales.map((c, i) => (
-                        <li
-                          key={i}
-                          className="flex items-start gap-2 rounded-lg bg-slate-50 p-3 text-sm text-slate-700"
-                        >
-                          <AlertTriangle size={15} className="mt-0.5 shrink-0 text-amber-500" />
-                          <span className="leading-relaxed">{c}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* c) Plan d'action d'urgence */}
-              <Card className="border-l-4 border-l-institution">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Send size={18} className="text-institution" /> c · Plan d'action d'urgence
-                    recommandé
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="whitespace-pre-line text-sm leading-relaxed text-slate-700">
-                    {brief.plan_action}
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-        </div>
+        <RapportIA
+          signalements={filtres}
+          cible={{
+            region: region || undefined,
+            province: province || undefined,
+            commune: commune || undefined,
+          }}
+        />
       )}
 
       {/* ══════════ CONSULTATIONS ══════════ */}

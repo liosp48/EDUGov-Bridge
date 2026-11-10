@@ -7,7 +7,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { Building2, GraduationCap, LogIn, LogOut, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui";
 import { chargerSession, effacerSession, espaceDe, type SessionUtilisateur } from "@/lib/auth";
@@ -15,31 +15,52 @@ import { deconnexion } from "@/app/auth/actions";
 
 export default function NavSession() {
   const router = useRouter();
+  const pathname = usePathname();
   const [session, setSession] = useState<SessionUtilisateur | null>(null);
   const [pret, setPret] = useState(false);
   const [sortie, setSortie] = useState(false);
 
+  // Relit le localStorage à chaque changement de page (navigation client-side)
+  // et synchronise aussi si un autre onglet modifie la session.
   useEffect(() => {
-    setSession(chargerSession());
-    setPret(true);
-  }, []);
+    const sync = () => {
+      setSession(chargerSession());
+      setPret(true);
+    };
+    sync();
+    window.addEventListener("storage", sync);
+    return () => window.removeEventListener("storage", sync);
+  }, [pathname]); // pathname = dépendance pour re-sync à chaque navigation
 
   const seDetacher = (e: React.MouseEvent) => {
     e.preventDefault();
     if (sortie) return;
     setSortie(true);
     void (async () => {
+      const etaitGov = session?.type_compte === "gouvernement";
       await deconnexion();
       effacerSession();
       setSession(null);
       setSortie(false);
-      router.push("/auth");
+      router.replace(etaitGov ? "/" : "/auth");
       router.refresh();
     })();
   };
 
   // Avant hydratation : affichage public neutre (aucun flash d'espace interne)
-  if (!pret || !session) {
+  if (!pret) {
+    return (
+      <Link
+        href="/auth"
+        className="flex items-center gap-2 rounded-lg bg-institution px-3 py-2 text-sm font-medium text-white opacity-0 pointer-events-none"
+        aria-hidden
+      >
+        <LogIn size={15} /> Connexion
+      </Link>
+    );
+  }
+
+  if (!session) {
     return (
       <Link
         href="/auth"

@@ -1,53 +1,76 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { CLE_COOKIE, espaceDe, lireSessionCookie } from "@/lib/auth";
+import { CLE_COOKIE, lireSessionCookie, URL_MINISTERE_PRIVE } from "@/lib/auth";
 
 // ═══════════════════════════════════════════════════════════════════
-// EDUGov-Bridge — Proxy d'accès (ex-middleware, convention Next 16)
-//   · /terrain    → réservé aux sessions type_compte = "terrain"
-//   · /ministere  → réservé aux sessions type_compte = "gouvernement"
-//   · /auth       → un utilisateur déjà connecté est orienté vers
-//                   son espace de travail, jamais la page publique.
-// La session provient du cookie httpOnly posé par les server actions.
+// EDUGov-Bridge — Proxy d'accès haute performance (Next 16)
+//   · / : Page d'accueil publique ultra-rapide (toujours accessible)
+//   · /auth : Connexion Terrain (accessible publiquement)
+//   · /terrain : Strictement réservé aux sessions type_compte = "terrain"
+//   · /ministere : Strictement réservé aux sessions type_compte = "gouvernement"
+//   · /cabinet-confidentiel-bf : URL privée secrète du Cabinet
 // ═══════════════════════════════════════════════════════════════════
+
+function ajouterEnTetesAntiCache(res: NextResponse): NextResponse {
+  res.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.headers.set("Pragma", "no-cache");
+  res.headers.set("Expires", "0");
+  return res;
+}
 
 export default function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  const session = lireSessionCookie(req.cookies.get(CLE_COOKIE)?.value);
-  const destination = espaceDe(session);
+  const cookieVal = req.cookies.get(CLE_COOKIE)?.value;
+  const session = lireSessionCookie(cookieVal);
 
-  // ── Espace Terrain : strictement réservé aux acteurs du terrain ──
+  // ── 1. Espace Terrain (/terrain) ──
   if (pathname.startsWith("/terrain")) {
     if (!session || session.type_compte !== "terrain") {
       const url = req.nextUrl.clone();
       url.pathname = "/auth";
-      url.searchParams.set("prochaine", "/terrain");
-      return NextResponse.redirect(url);
+      url.search = "";
+      return ajouterEnTetesAntiCache(NextResponse.redirect(url));
     }
-    return NextResponse.next();
+    return ajouterEnTetesAntiCache(NextResponse.next());
   }
 
-  // ── Espace Ministère : strictement réservé aux décideurs autorisés ──
+  // ── 2. Espace Ministère (/ministere) ──
+  // Doit être totalement inaccessible sans session gouvernementale.
+  // Ne divulgue JAMAIS l'existence de l'URL privée : redirection silencieuse vers l'accueil.
   if (pathname.startsWith("/ministere")) {
-    if (!session || session.type_compte !== "gouvernement") {
+    if (!session) {
       const url = req.nextUrl.clone();
-      url.pathname = "/auth";
-      url.searchParams.set("prochaine", "/ministere");
-      return NextResponse.redirect(url);
+      url.pathname = "/";
+      url.search = "";
+      return ajouterEnTetesAntiCache(NextResponse.redirect(url));
     }
-    return NextResponse.next();
+    if (session.type_compte !== "gouvernement") {
+      const url = req.nextUrl.clone();
+      url.pathname = "/terrain";
+      url.search = "";
+      return ajouterEnTetesAntiCache(NextResponse.redirect(url));
+    }
+    return ajouterEnTetesAntiCache(NextResponse.next());
   }
 
-  // ── /auth : un utilisateur déjà identifié va directement dans son espace ──
-  if (pathname.startsWith("/auth") && destination !== "/auth") {
-    const url = req.nextUrl.clone();
-    url.pathname = destination;
-    url.search = "";
-    return NextResponse.redirect(url);
+  // ── 3. URL privée gouvernementale (/cabinet-confidentiel-bf) ──
+  if (pathname.startsWith(URL_MINISTERE_PRIVE)) {
+    if (session?.type_compte === "gouvernement") {
+      const url = req.nextUrl.clone();
+      url.pathname = "/ministere";
+      url.search = "";
+      return ajouterEnTetesAntiCache(NextResponse.redirect(url));
+    }
+    return ajouterEnTetesAntiCache(NextResponse.next());
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/terrain/:path*", "/ministere/:path*", "/auth"],
+  matcher: [
+    "/terrain/:path*",
+    "/ministere/:path*",
+    "/cabinet-confidentiel-bf",
+    "/cabinet-confidentiel-bf/:path*",
+  ],
 };

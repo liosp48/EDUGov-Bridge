@@ -25,3 +25,10 @@ body {
   background: linear-gradient(to right, #ef2b2d 33.3%, #fcd116 33.3%, #fcd116 66.6%, #009e49 66.6%);
   height: 4px;
 }
+@media print {
+  .no-print { display: none !important; }
+  body * { visibility: hidden; }
+  #rapport-ia-print, #rapport-ia-print * { visibility: visible; }
+  #rapport-ia-print { position: absolute; left: 0; top: 0; width: 100%; box-shadow: none !important; border-radius: 0 !important; }
+  #rapport-ia-print h2 { font-size: 18pt; }
+}

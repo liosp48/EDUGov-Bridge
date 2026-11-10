@@ -40,18 +40,21 @@ ANTHROPIC_API_KEY=sk-ant-...     # Claude 3.5 Haiku (fallback)
 
 ```
 app/
-  layout.tsx                # Header institutionnel + ruban Burkina
-  page.tsx                  # Landing page
-  terrain/page.tsx          # Formulaire adaptatif par rôle + Consultations
-  ministere/page.tsx        # Dashboard KPIs + Recharts + Heatmap + Brief IA
-  api/synthese-ia/route.ts  # Prompt NLP GPT-4o-mini / Claude 3.5 Haiku
+  layout.tsx                     # Header institutionnel + ruban Burkina
+  page.tsx                       # Landing page (redirection auto si connecté)
+  auth/page.tsx                  # Connexion Terrain uniquement (enseignants, DRH MENAPLN)
+  cabinet-confidentiel-bf/page.tsx # URL PRIVÉE & SECRÈTE réservée au Cabinet Ministériel
+  terrain/page.tsx               # Formulaire adaptatif par rôle + Consultations
+  ministere/page.tsx             # Dashboard KPIs + Recharts + Heatmap + Brief IA
+  api/synthese-ia/route.ts       # Prompt NLP GPT-4o-mini / Claude 3.5 Haiku
+middleware.ts                    # Contrôle strict d'accès, anti-retour arrière & headers anti-cache
 components/
   ui/index.tsx              # Design system léger (style shadcn)
   geo-selector.tsx          # Région → Province → Commune → Établissement
   kpi-card.tsx
 lib/
   supabase.ts               # Client + helpers (mode démo intégré)
-  geographie.ts             # Découpage administratif du Burkina (13 régions)
+  geographie.ts             # Découpage administratif du Burkina (17 régions 2025)
   demo-data.ts              # 12 signalements + 3 consultations réalistes
   utils.ts
 types/
@@ -63,12 +66,14 @@ supabase/
 ## 👥 Navigateur de démo (script jury)
 
 1. **`/`** — concept, 4 acteurs, liveness des signalements.
-2. **`/terrain`** — choisir « Directeur d'école », Dori → Séno, gravité 5, soumettre.
-3. Onglet **Consultations** → répondre à « Plan Cantines URGENT ».
-4. **`/ministere`** — cliquer la tuile « Sahel » de la carte thermique (le dashboard se filtre).
-5. Onglet **Ministre Brief** → **Générer le Brief Stratégique** :
+2. **`/auth`** — connexion réservée aux acteurs du terrain (matricules démo : `MEN-2026-0031`, `MEN-2026-0457`...).
+3. **`/terrain`** — choisir « Directeur d'école », Dori → Séno, gravité 5, soumettre.
+4. Onglet **Consultations** → répondre à « Plan Cantines URGENT ».
+5. **`/cabinet-confidentiel-bf`** (URL Privée) — connexion réservée aux membres du Cabinet (`ministre@education.gov.bf`).
+6. **`/ministere`** — cliquer la tuile « Liptako » de la carte thermique (le dashboard se filtre).
+7. Onglet **Ministre Brief** → **Générer le Brief Stratégique** :
    a) Résumé exécutif · b) Triangulation · c) Top 3 innovations.
-6. Onglet **Consultations** → cibler Séno/Dori, publier : boucle bouclée.
+8. Onglet **Consultations** → cibler Séno/Dori, publier : boucle bouclée.
 
 ## 🆚 Prochaines étapes (post-MVP)
 

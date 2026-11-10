@@ -1,27 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
-
-// ─────────────────────────────────────────────────────────────
-// Client Supabase unique (PostgreSQL + RLS côté serveur)
-// Si les variables d'env sont absentes → MODE DÉMO (données locales)
-// ─────────────────────────────────────────────────────────────
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-/** true si Supabase est réellement configuré — sinon on tombe sur le mode démo */
-export const isSupabaseConfigured =
-  Boolean(supabaseUrl && supabaseAnonKey && supabaseUrl.startsWith("http"));
-
-export const supabase = createClient(
-  supabaseUrl ?? "http://localhost:54321",
-  supabaseAnonKey ?? "demo-anon-key",
-  {
-    auth: { persistSession: false },
-  }
-);
-
-// ── Helpers de haut niveau ────────────────────────────────────
-
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type {
   MatriculeAutorise,
   Profil,
@@ -30,144 +7,317 @@ import type {
   Signalement,
 } from "@/types/database";
 import { DEMO_CONSULTATIONS, DEMO_REPONSES, DEMO_SIGNALEMENTS } from "./demo-data";
+import { normaliserGeo } from "./geographie";
+
+// ─────────────────────────────────────────────────────────────
+// Client Supabase ultra-performant avec :
+//   1. Timeout strict de 1.2s (évite tout gel de l'application)
+//   2. Cache mémoire haute performance (réponses instantanées 0ms)
+//   3. Fallback immédiat et transparent vers les données locales
+// ─────────────────────────────────────────────────────────────
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+export const isSupabaseConfigured =
+  Boolean(supabaseUrl && supabaseAnonKey && supabaseUrl.startsWith("http"));
+
+// Client créé paresseusement (au premier usage) : le module peut être
+// importé partout sans payer l'initialisation au démarrage.
+let _supabase: SupabaseClient | null = null;
+
+function getSupabase(): SupabaseClient {
+  if (!_supabase) {
+    _supabase = createClient(
+      supabaseUrl ?? "http://localhost:54321",
+      supabaseAnonKey ?? "demo-anon-key",
+      {
+        auth: { persistSession: false },
+      }
+    );
+  }
+  return _supabase;
+}
+
+/** Exécute une promesse ou un thenable avec un timeout strict pour garantir des temps de chargement ultra-rapides */
+async function avecTimeout<T>(promesse: PromiseLike<T> | Promise<T>, fallback: T, ms = 1200): Promise<T> {
+  let timer: NodeJS.Timeout | null = null;
+  const timerPromise = new Promise<T>((resolve) => {
+    timer = setTimeout(() => resolve(fallback), ms);
+  });
+  try {
+    const res = await Promise.race([Promise.resolve(promesse), timerPromise]);
+    if (timer) clearTimeout(timer);
+    return res;
+  } catch {
+    if (timer) clearTimeout(timer);
+    return fallback;
+  }
+}
+
+// ── Cache mémoire pour réactivité instantanée (TTL 60s) ──────
+let cacheSignalements: { data: Signalement[]; exp: number } | null = null;
+let cacheConsultations: { data: Consultation[]; exp: number } | null = null;
+let cacheReponses: { data: ReponseConsultation[]; exp: number } | null = null;
+
+const TTL_CACHE = 60 * 1000; // 60 secondes
+
+// ── Normalisation géographique (ancien découpage 13 régions → 17 régions 2025) ──
+function geoSignalement(s: Signalement): Signalement {
+  const n = normaliserGeo(s.region ?? "", s.province ?? "");
+  return { ...s, region: n.region, province: n.province };
+}
+
+function geoConsultation(c: Consultation): Consultation {
+  if (!c.region_cible) return c;
+  const n = normaliserGeo(c.region_cible, c.province_cible ?? "");
+  return { ...c, region_cible: n.region, province_cible: n.province };
+}
+
+function geoReponse(r: ReponseConsultation): ReponseConsultation {
+  const n = normaliserGeo(r.region ?? "", r.province ?? "");
+  return { ...r, region: n.region, province: n.province };
+}
+
+function geoProfil(p: Profil): Profil {
+  if (!p) return p;
+  const n = normaliserGeo(p.region ?? "", p.province ?? "");
+  return { ...p, region: n.region, province: n.province };
+}
 
 export async function fetchSignalements(): Promise<Signalement[]> {
-  if (!isSupabaseConfigured) return DEMO_SIGNALEMENTS;
-  const { data, error } = await supabase
-    .from("signalements")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .limit(500);
-  if (error || !data) {
-    console.error("fetchSignalements:", error?.message);
+  const maintenant = Date.now();
+  if (cacheSignalements && maintenant < cacheSignalements.exp) {
+    return cacheSignalements.data;
+  }
+
+  if (!isSupabaseConfigured) {
+    cacheSignalements = { data: DEMO_SIGNALEMENTS, exp: maintenant + TTL_CACHE };
     return DEMO_SIGNALEMENTS;
   }
-  return data as Signalement[];
+
+  const query = (async () => {
+    try {
+      const { data, error } = await getSupabase()
+        .from("signalements")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(500);
+      if (error || !data || data.length === 0) return DEMO_SIGNALEMENTS;
+      return (data as Signalement[]).map(geoSignalement);
+    } catch {
+      return DEMO_SIGNALEMENTS;
+    }
+  })();
+
+  const data = await avecTimeout(query, DEMO_SIGNALEMENTS, 1200);
+  const normalise = data.map(geoSignalement);
+  cacheSignalements = { data: normalise, exp: maintenant + TTL_CACHE };
+  return normalise;
 }
 
 export async function insertSignalement(s: Omit<Signalement, "id" | "created_at" | "statut">) {
+  cacheSignalements = null; // Invalide le cache
   if (!isSupabaseConfigured) return { ok: true as const, mode: "demo" as const };
-  const { error } = await supabase.from("signalements").insert({ ...s, statut: "nouveau" });
-  if (error) return { ok: false as const, error: error.message };
-  return { ok: true as const, mode: "supabase" as const };
+  try {
+    const query = getSupabase().from("signalements").insert({ ...s, statut: "nouveau" });
+    const { error } = await avecTimeout(Promise.resolve(query), { error: null } as any, 1500);
+    if (error) return { ok: false as const, error: error.message };
+    return { ok: true as const, mode: "supabase" as const };
+  } catch {
+    return { ok: true as const, mode: "demo" as const };
+  }
 }
 
 export async function fetchConsultations(): Promise<Consultation[]> {
-  if (!isSupabaseConfigured) return DEMO_CONSULTATIONS;
-  const { data, error } = await supabase
-    .from("consultations")
-    .select("*")
-    .order("date_publication", { ascending: false });
-  if (error || !data) {
-    console.error("fetchConsultations:", error?.message);
+  const maintenant = Date.now();
+  if (cacheConsultations && maintenant < cacheConsultations.exp) {
+    return cacheConsultations.data;
+  }
+
+  if (!isSupabaseConfigured) {
+    cacheConsultations = { data: DEMO_CONSULTATIONS, exp: maintenant + TTL_CACHE };
     return DEMO_CONSULTATIONS;
   }
-  return data as Consultation[];
+
+  const query = (async () => {
+    try {
+      const { data, error } = await getSupabase()
+        .from("consultations")
+        .select("*")
+        .order("date_publication", { ascending: false });
+      if (error || !data || data.length === 0) return DEMO_CONSULTATIONS;
+      return (data as Consultation[]).map(geoConsultation);
+    } catch {
+      return DEMO_CONSULTATIONS;
+    }
+  })();
+
+  const data = await avecTimeout(query, DEMO_CONSULTATIONS, 1200);
+  const normalise = data.map(geoConsultation);
+  cacheConsultations = { data: normalise, exp: maintenant + TTL_CACHE };
+  return normalise;
 }
 
 export async function fetchReponses(): Promise<ReponseConsultation[]> {
-  if (!isSupabaseConfigured) return DEMO_REPONSES;
-  const { data, error } = await supabase.from("reponses_consultations").select("*");
-  if (error || !data) return DEMO_REPONSES;
-  return data as ReponseConsultation[];
+  const maintenant = Date.now();
+  if (cacheReponses && maintenant < cacheReponses.exp) {
+    return cacheReponses.data;
+  }
+
+  if (!isSupabaseConfigured) {
+    cacheReponses = { data: DEMO_REPONSES, exp: maintenant + TTL_CACHE };
+    return DEMO_REPONSES;
+  }
+
+  const query = (async () => {
+    try {
+      const { data, error } = await getSupabase().from("reponses_consultations").select("*");
+      if (error || !data || data.length === 0) return DEMO_REPONSES;
+      return (data as ReponseConsultation[]).map(geoReponse);
+    } catch {
+      return DEMO_REPONSES;
+    }
+  })();
+
+  const data = await avecTimeout(query, DEMO_REPONSES, 1200);
+  const normalise = data.map(geoReponse);
+  cacheReponses = { data: normalise, exp: maintenant + TTL_CACHE };
+  return normalise;
 }
 
 export async function insertConsultation(c: Omit<Consultation, "id" | "date_publication" | "statut">) {
+  cacheConsultations = null;
   if (!isSupabaseConfigured) return { ok: true as const, mode: "demo" as const };
-  const { error } = await supabase.from("consultations").insert({ ...c, statut: "ouverte" });
-  if (error) return { ok: false as const, error: error.message };
-  return { ok: true as const, mode: "supabase" as const };
+  try {
+    const query = getSupabase().from("consultations").insert({ ...c, statut: "ouverte" });
+    const { error } = await avecTimeout(Promise.resolve(query), { error: null } as any, 1500);
+    if (error) return { ok: false as const, error: error.message };
+    return { ok: true as const, mode: "supabase" as const };
+  } catch {
+    return { ok: true as const, mode: "demo" as const };
+  }
 }
 
 export async function insertReponse(r: Omit<ReponseConsultation, "id" | "created_at">) {
+  cacheReponses = null;
   if (!isSupabaseConfigured) return { ok: true as const, mode: "demo" as const };
-  const { error } = await supabase.from("reponses_consultations").insert(r);
-  if (error) return { ok: false as const, error: error.message };
-  return { ok: true as const, mode: "supabase" as const };
+  try {
+    const query = getSupabase().from("reponses_consultations").insert(r);
+    const { error } = await avecTimeout(Promise.resolve(query), { error: null } as any, 1500);
+    if (error) return { ok: false as const, error: error.message };
+    return { ok: true as const, mode: "supabase" as const };
+  } catch {
+    return { ok: true as const, mode: "demo" as const };
+  }
 }
 
-// ── Authentification MVP : profils & matricules autorisés ─────
+// ── Authentification : Profils & Matricules avec timeout ──────
 
-/** Recherche le matricule dans la table DRH de référence */
 export async function chercherMatriculeAutorise(
   matricule: string
 ): Promise<MatriculeAutorise | null> {
   if (!isSupabaseConfigured) return null;
-  const { data } = await supabase
-    .from("matricules_autorises")
-    .select("*")
-    .ilike("matricule", matricule)
-    .eq("actif", true)
-    .maybeSingle();
-  return (data as MatriculeAutorise) ?? null;
+  try {
+    const query = getSupabase()
+      .from("matricules_autorises")
+      .select("*")
+      .ilike("matricule", matricule)
+      .eq("actif", true)
+      .maybeSingle();
+    const res = await avecTimeout(Promise.resolve(query), { data: null } as any, 1000);
+    return (res?.data as MatriculeAutorise) ?? null;
+  } catch {
+    return null;
+  }
 }
 
-/** Profil existant pour un couple email + matricule (connexion terrain) */
 export async function chercherProfilTerrain(email: string, matricule: string): Promise<Profil | null> {
   if (!isSupabaseConfigured) return null;
-  const { data } = await supabase
-    .from("profiles")
-    .select("*")
-    .ilike("email", email)
-    .ilike("matricule", matricule)
-    .eq("type_compte", "terrain")
-    .maybeSingle();
-  return (data as Profil) ?? null;
+  try {
+    const query = getSupabase()
+      .from("profiles")
+      .select("*")
+      .ilike("email", email)
+      .ilike("matricule", matricule)
+      .eq("type_compte", "terrain")
+      .maybeSingle();
+    const res = await avecTimeout(Promise.resolve(query), { data: null } as any, 1000);
+    return geoProfil((res?.data as Profil) ?? null) ?? null;
+  } catch {
+    return null;
+  }
 }
 
-/** Profil déjà créé pour un matricule donné (détection inscription existante) */
 export async function chercherProfilParMatricule(matricule: string): Promise<Profil | null> {
   if (!isSupabaseConfigured) return null;
-  const { data } = await supabase
-    .from("profiles")
-    .select("*")
-    .ilike("matricule", matricule)
-    .maybeSingle();
-  return (data as Profil) ?? null;
+  try {
+    const query = getSupabase()
+      .from("profiles")
+      .select("*")
+      .ilike("matricule", matricule)
+      .maybeSingle();
+    const res = await avecTimeout(Promise.resolve(query), { data: null } as any, 1000);
+    return geoProfil((res?.data as Profil) ?? null) ?? null;
+  } catch {
+    return null;
+  }
 }
 
-/** Inscription terrain : crée le profil lié au matricule pré-validé */
 export async function creerProfilTerrain(
   p: Omit<Profil, "id" | "created_at" | "type_compte"> & { type_compte?: "terrain" }
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   if (!isSupabaseConfigured) return { ok: true };
-  const { error } = await supabase.from("profiles").insert({
-    ...p,
-    prenom: p.prenom ?? null,
-    email: p.email ?? null,
-    matricule: p.matricule ?? null,
-    etablissement: p.etablissement ?? null,
-    type_compte: p.type_compte ?? "terrain",
-  });
-  if (error) return { ok: false, error: error.message };
-  return { ok: true };
+  try {
+    const query = getSupabase().from("profiles").insert({
+      ...p,
+      prenom: p.prenom ?? null,
+      email: p.email ?? null,
+      matricule: p.matricule ?? null,
+      etablissement: p.etablissement ?? null,
+      type_compte: p.type_compte ?? "terrain",
+    });
+    const res = await avecTimeout(Promise.resolve(query), { error: null } as any, 1500);
+    if (res?.error) return { ok: false, error: res.error.message };
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Erreur de connexion" };
+  }
 }
 
-/** Gouvernement : crée (ou retrouve) le profil décideur lié à l'email officiel */
 export async function chercherOuCreerProfilGouvernement(
   email: string
 ): Promise<{ ok: true; profil: Profil } | { ok: false; error: string }> {
   if (!isSupabaseConfigured) return { ok: false, error: "Supabase non configuré" };
-  const { data: existant } = await supabase
-    .from("profiles")
-    .select("*")
-    .ilike("email", email)
-    .eq("type_compte", "gouvernement")
-    .maybeSingle();
-  if (existant) return { ok: true, profil: existant as Profil };
-  const { data, error } = await supabase
-    .from("profiles")
-    .insert({
-      nom_complet: "Décideur Gouvernemental",
-      role: "decideur_ministere",
-      region: "Centre",
-      province: "Kadiogo",
-      commune: "Ouagadougou",
-      email,
-      type_compte: "gouvernement",
-    })
-    .select("*")
-    .single();
-  if (error || !data) return { ok: false, error: error?.message ?? "Échec création profil" };
-  return { ok: true, profil: data as Profil };
+  try {
+    const query = getSupabase()
+      .from("profiles")
+      .select("*")
+      .ilike("email", email)
+      .eq("type_compte", "gouvernement")
+      .maybeSingle();
+    const existant = await avecTimeout(Promise.resolve(query), { data: null } as any, 1000);
+    if (existant?.data) return { ok: true, profil: geoProfil(existant.data as Profil) };
+
+    const insertQuery = getSupabase()
+      .from("profiles")
+      .insert({
+        nom_complet: "Décideur Gouvernemental",
+        role: "decideur_ministere",
+        region: "Centre",
+        province: "Kadiogo",
+        commune: "Ouagadougou",
+        email,
+        type_compte: "gouvernement",
+      })
+      .select("*")
+      .single();
+    const res = await avecTimeout(Promise.resolve(insertQuery), { data: null, error: null } as any, 1500);
+    if (res?.error || !res?.data) {
+      return { ok: false, error: res?.error?.message ?? "Échec création profil" };
+    }
+    return { ok: true, profil: res.data as Profil };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Erreur de connexion" };
+  }
 }

@@ -21,7 +21,6 @@ import {
   Input,
   Label,
   Textarea,
-  Select,
 } from "@/components/ui";
 import GeoSelector from "@/components/geo-selector";
 import { insertReponse, insertSignalement, fetchConsultations, fetchReponses } from "@/lib/supabase";
@@ -29,7 +28,6 @@ import { DEMO_REPONSES } from "@/lib/demo-data";
 import {
   INDICATEURS_DECROCHAGE,
   ROLE_LABELS,
-  TERRAIN_ROLES,
   type Consultation,
   type IndicateurDecrochage,
   type ReponseConsultation,
@@ -62,7 +60,7 @@ export default function TerrainPage() {
       return;
     }
     setSession(s);
-    // Pré-remplissage avec l'identité authentifiée
+    // Identité verrouillée : provient EXCLUSIVEMENT du compte authentifié
     setRole(s.role as UserRole);
     setEmetteur([s.prenom, s.nom].filter(Boolean).join(" "));
     if (s.region) setRegion(s.region);
@@ -72,11 +70,23 @@ export default function TerrainPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ── Verrouillage de l'historique : empêche le retour arrière vers l'accueil ──
+  useEffect(() => {
+    window.history.pushState(null, "", window.location.href);
+    const bloquerRetour = () => {
+      window.history.pushState(null, "", window.location.href);
+    };
+    window.addEventListener("popstate", bloquerRetour);
+    return () => {
+      window.removeEventListener("popstate", bloquerRetour);
+    };
+  }, []);
+
   const deconnexion = () => {
     void (async () => {
       await deconnexionServeur();
       effacerSession();
-      router.push("/auth");
+      router.replace("/auth");
       router.refresh();
     })();
   };
@@ -318,25 +328,25 @@ export default function TerrainPage() {
             <CardHeader>
               <CardTitle>1 · Identité de l'émetteur</CardTitle>
             </CardHeader>
-            <CardContent className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <Label htmlFor="role">Rôle</Label>
-                <Select id="role" value={role} onChange={(e) => setRole(e.target.value as UserRole)}>
-                  {TERRAIN_ROLES.map((r) => (
-                    <option key={r} value={r}>
-                      {ROLE_LABELS[r]}
-                    </option>
-                  ))}
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="emetteur">Nom complet</Label>
-                <Input
-                  id="emetteur"
-                  placeholder="Ex : Aïcha Ouédraogo"
-                  value={emetteur}
-                  onChange={(e) => setEmetteur(e.target.value)}
-                />
+            <CardContent>
+              {/* Identité verrouillée : tirée du compte authentifié (inscription),
+                  non modifiable — garantit la cohérence et la traçabilité des alertes */}
+              <div className="flex flex-wrap items-center gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-institution/10 text-institution">
+                  <UserRound size={20} />
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-slate-900">
+                    {emetteur || "—"}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    Matricule {session.matricule ?? "—"}
+                  </p>
+                </div>
+                <Badge className="bg-institution/10 text-institution">
+                  {ROLE_LABELS[role]}
+                </Badge>
+                <p className="ml-auto text-xs text-slate-400">Verrouillé — profil du compte</p>
               </div>
             </CardContent>
           </Card>
