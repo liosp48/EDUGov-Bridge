@@ -52,10 +52,10 @@ export default function NavSession() {
     return (
       <Link
         href="/auth"
-        className="flex items-center gap-2 rounded-lg bg-institution px-3 py-2 text-sm font-medium text-white opacity-0 pointer-events-none"
+        className="flex items-center gap-1.5 rounded-lg bg-institution px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-white opacity-0 pointer-events-none"
         aria-hidden
       >
-        <LogIn size={15} /> Connexion
+        <LogIn size={14} className="sm:size-[15px]" /> Connexion
       </Link>
     );
   }
@@ -64,9 +64,9 @@ export default function NavSession() {
     return (
       <Link
         href="/auth"
-        className="flex items-center gap-2 rounded-lg bg-institution px-3 py-2 text-sm font-medium text-white hover:bg-institution-dark"
+        className="flex items-center gap-1.5 rounded-lg bg-institution px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-white hover:bg-institution-dark shadow-sm transition"
       >
-        <LogIn size={15} /> Connexion
+        <LogIn size={14} className="sm:size-[15px]" /> <span>Connexion</span>
       </Link>
     );
   }
@@ -75,13 +75,13 @@ export default function NavSession() {
   const destination = espaceDe(session);
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1.5 sm:gap-2">
       <Link
         href={destination}
-        className="flex items-center gap-2 rounded-lg bg-institution px-3 py-2 text-sm font-medium text-white hover:bg-institution-dark"
+        className="flex items-center gap-1.5 rounded-lg bg-institution px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-white hover:bg-institution-dark shadow-sm transition"
       >
-        {acteurTerrain ? <GraduationCap size={15} /> : <Building2 size={15} />}
-        Mon espace
+        {acteurTerrain ? <GraduationCap size={14} className="sm:size-[15px]" /> : <Building2 size={14} className="sm:size-[15px]" />}
+        espace
       </Link>
       <Button
         size="sm"
@@ -89,9 +89,9 @@ export default function NavSession() {
         onClick={seDetacher}
         disabled={sortie}
         aria-label="Se déconnecter"
-        className="h-10"
+        className="h-8 sm:h-9 px-2 sm:px-2.5 text-xs"
       >
-        {sortie ? <Loader2 className="animate-spin" size={14} /> : <LogOut size={14} />}
+        {sortie ? <Loader2 className="animate-spin" size={13} /> : <LogOut size={13} />}
         <span className="hidden sm:inline">Quitter</span>
       </Button>
     </div>

@@ -8,6 +8,11 @@ import type {
 } from "@/types/database";
 import { DEMO_CONSULTATIONS, DEMO_REPONSES, DEMO_SIGNALEMENTS } from "./demo-data";
 import { normaliserGeo } from "./geographie";
+import {
+  backendIndisponible,
+  marquerBackendIndisponible,
+  marquerBackendOperationnel,
+} from "./reseau";
 
 // ─────────────────────────────────────────────────────────────
 // Client Supabase ultra-performant avec :
@@ -91,40 +96,44 @@ export async function fetchSignalements(): Promise<Signalement[]> {
     return cacheSignalements.data;
   }
 
-  if (!isSupabaseConfigured) {
+  if (!isSupabaseConfigured || backendIndisponible()) {
     cacheSignalements = { data: DEMO_SIGNALEMENTS, exp: maintenant + TTL_CACHE };
     return DEMO_SIGNALEMENTS;
   }
 
-  const query = (async () => {
+  const query = (async (): Promise<Signalement[] | null> => {
     try {
       const { data, error } = await getSupabase()
         .from("signalements")
         .select("*")
         .order("created_at", { ascending: false })
         .limit(500);
-      if (error || !data || data.length === 0) return DEMO_SIGNALEMENTS;
+      if (error || !data || data.length === 0) return null;
       return (data as Signalement[]).map(geoSignalement);
     } catch {
-      return DEMO_SIGNALEMENTS;
+      return null;
     }
   })();
 
-  const data = await avecTimeout(query, DEMO_SIGNALEMENTS, 1200);
-  const normalise = data.map(geoSignalement);
-  cacheSignalements = { data: normalise, exp: maintenant + TTL_CACHE };
-  return normalise;
+  const data = await avecTimeout<Signalement[] | null>(query, null, 1200);
+  const final = data ?? DEMO_SIGNALEMENTS;
+  if (data) marquerBackendOperationnel();
+  else marquerBackendIndisponible();
+  cacheSignalements = { data: final, exp: maintenant + TTL_CACHE };
+  return final;
 }
 
 export async function insertSignalement(s: Omit<Signalement, "id" | "created_at" | "statut">) {
   cacheSignalements = null; // Invalide le cache
-  if (!isSupabaseConfigured) return { ok: true as const, mode: "demo" as const };
+  if (!isSupabaseConfigured || backendIndisponible()) return { ok: true as const, mode: "demo" as const };
   try {
     const query = getSupabase().from("signalements").insert({ ...s, statut: "nouveau" });
     const { error } = await avecTimeout(Promise.resolve(query), { error: null } as any, 1500);
     if (error) return { ok: false as const, error: error.message };
+    marquerBackendOperationnel();
     return { ok: true as const, mode: "supabase" as const };
   } catch {
+    marquerBackendIndisponible();
     return { ok: true as const, mode: "demo" as const };
   }
 }
@@ -135,28 +144,30 @@ export async function fetchConsultations(): Promise<Consultation[]> {
     return cacheConsultations.data;
   }
 
-  if (!isSupabaseConfigured) {
+  if (!isSupabaseConfigured || backendIndisponible()) {
     cacheConsultations = { data: DEMO_CONSULTATIONS, exp: maintenant + TTL_CACHE };
     return DEMO_CONSULTATIONS;
   }
 
-  const query = (async () => {
+  const query = (async (): Promise<Consultation[] | null> => {
     try {
       const { data, error } = await getSupabase()
         .from("consultations")
         .select("*")
         .order("date_publication", { ascending: false });
-      if (error || !data || data.length === 0) return DEMO_CONSULTATIONS;
+      if (error || !data || data.length === 0) return null;
       return (data as Consultation[]).map(geoConsultation);
     } catch {
-      return DEMO_CONSULTATIONS;
+      return null;
     }
   })();
 
-  const data = await avecTimeout(query, DEMO_CONSULTATIONS, 1200);
-  const normalise = data.map(geoConsultation);
-  cacheConsultations = { data: normalise, exp: maintenant + TTL_CACHE };
-  return normalise;
+  const data = await avecTimeout<Consultation[] | null>(query, null, 1200);
+  const final = data ?? DEMO_CONSULTATIONS;
+  if (data) marquerBackendOperationnel();
+  else marquerBackendIndisponible();
+  cacheConsultations = { data: final, exp: maintenant + TTL_CACHE };
+  return final;
 }
 
 export async function fetchReponses(): Promise<ReponseConsultation[]> {
@@ -165,49 +176,55 @@ export async function fetchReponses(): Promise<ReponseConsultation[]> {
     return cacheReponses.data;
   }
 
-  if (!isSupabaseConfigured) {
+  if (!isSupabaseConfigured || backendIndisponible()) {
     cacheReponses = { data: DEMO_REPONSES, exp: maintenant + TTL_CACHE };
     return DEMO_REPONSES;
   }
 
-  const query = (async () => {
+  const query = (async (): Promise<ReponseConsultation[] | null> => {
     try {
       const { data, error } = await getSupabase().from("reponses_consultations").select("*");
-      if (error || !data || data.length === 0) return DEMO_REPONSES;
+      if (error || !data || data.length === 0) return null;
       return (data as ReponseConsultation[]).map(geoReponse);
     } catch {
-      return DEMO_REPONSES;
+      return null;
     }
   })();
 
-  const data = await avecTimeout(query, DEMO_REPONSES, 1200);
-  const normalise = data.map(geoReponse);
-  cacheReponses = { data: normalise, exp: maintenant + TTL_CACHE };
-  return normalise;
+  const data = await avecTimeout<ReponseConsultation[] | null>(query, null, 1200);
+  const final = data ?? DEMO_REPONSES;
+  if (data) marquerBackendOperationnel();
+  else marquerBackendIndisponible();
+  cacheReponses = { data: final, exp: maintenant + TTL_CACHE };
+  return final;
 }
 
 export async function insertConsultation(c: Omit<Consultation, "id" | "date_publication" | "statut">) {
   cacheConsultations = null;
-  if (!isSupabaseConfigured) return { ok: true as const, mode: "demo" as const };
+  if (!isSupabaseConfigured || backendIndisponible()) return { ok: true as const, mode: "demo" as const };
   try {
     const query = getSupabase().from("consultations").insert({ ...c, statut: "ouverte" });
     const { error } = await avecTimeout(Promise.resolve(query), { error: null } as any, 1500);
     if (error) return { ok: false as const, error: error.message };
+    marquerBackendOperationnel();
     return { ok: true as const, mode: "supabase" as const };
   } catch {
+    marquerBackendIndisponible();
     return { ok: true as const, mode: "demo" as const };
   }
 }
 
 export async function insertReponse(r: Omit<ReponseConsultation, "id" | "created_at">) {
   cacheReponses = null;
-  if (!isSupabaseConfigured) return { ok: true as const, mode: "demo" as const };
+  if (!isSupabaseConfigured || backendIndisponible()) return { ok: true as const, mode: "demo" as const };
   try {
     const query = getSupabase().from("reponses_consultations").insert(r);
     const { error } = await avecTimeout(Promise.resolve(query), { error: null } as any, 1500);
     if (error) return { ok: false as const, error: error.message };
+    marquerBackendOperationnel();
     return { ok: true as const, mode: "supabase" as const };
   } catch {
+    marquerBackendIndisponible();
     return { ok: true as const, mode: "demo" as const };
   }
 }

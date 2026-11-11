@@ -105,14 +105,14 @@ export default function AuthTerrainPage() {
   };
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
-      <div className="flex items-center gap-3">
-        <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-institution text-white shadow-sm">
-          <GraduationCap size={26} />
+    <div className="mx-auto max-w-2xl px-3 py-6 sm:px-6 sm:py-10">
+      <div className="flex items-center gap-2.5 sm:gap-3">
+        <span className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-institution text-white shadow-sm shrink-0">
+          <GraduationCap size={22} className="sm:size-[26px]" />
         </span>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">Espace Acteurs du Terrain</h1>
-          <p className="text-sm text-slate-600">
+          <h1 className="text-xl font-bold text-slate-900 sm:text-3xl">Espace Acteurs du Terrain</h1>
+          <p className="text-xs sm:text-sm text-slate-600">
             Portail réservé aux Enseignants, Directeurs d'école, Inspecteurs et Comités APE/COGES.
           </p>
         </div>
@@ -120,21 +120,21 @@ export default function AuthTerrainPage() {
 
       {/* Message d'erreur global */}
       {erreur && (
-        <p className="mt-6 flex items-start gap-2 rounded-lg border border-faso-red/30 bg-faso-red/10 px-4 py-3 text-sm text-faso-red">
-          <AlertTriangle size={18} className="mt-0.5 shrink-0" /> {erreur}
+        <p className="mt-4 sm:mt-6 flex items-start gap-2 rounded-lg border border-faso-red/30 bg-faso-red/10 px-3.5 py-2.5 text-xs sm:text-sm text-faso-red">
+          <AlertTriangle size={16} className="mt-0.5 shrink-0" /> {erreur}
         </p>
       )}
 
       {/* ══════════ FORMULAIRE TERRAIN ══════════ */}
-      <Card className="mt-6 border-slate-200 shadow-sm">
+      <Card className="mt-4 sm:mt-6 border-slate-200 shadow-sm">
         <CardHeader>
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <CardTitle className="text-lg">Authentification par Matricule MENAPLN</CardTitle>
-            <Badge className="bg-institution/10 text-institution">Base DRH Officielle</Badge>
+            <CardTitle className="text-base sm:text-lg">Authentification par Matricule MENAPLN</CardTitle>
+            <Badge className="bg-institution/10 text-institution text-[10px] sm:text-xs">Base DRH Officielle</Badge>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="mb-5 inline-flex rounded-lg border border-slate-200 p-1">
+          <div className="mb-4 sm:mb-5 grid grid-cols-2 sm:inline-flex w-full sm:w-auto rounded-lg border border-slate-200 p-1">
             {(
               [
                 { key: "connexion", label: "Se connecter", icone: <LogIn size={14} /> },
@@ -148,7 +148,7 @@ export default function AuthTerrainPage() {
                   setModeTerrain(m.key);
                   setErreur(null);
                 }}
-                className={`flex items-center gap-1.5 rounded-md px-4 py-1.5 text-sm font-medium transition ${modeTerrain === m.key ? "bg-institution text-white shadow-sm" : "text-slate-600 hover:bg-slate-100"
+                className={`flex items-center justify-center gap-1.5 rounded-md px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium transition ${modeTerrain === m.key ? "bg-institution text-white shadow-sm" : "text-slate-600 hover:bg-slate-100"
                   }`}
               >
                 {m.icone} {m.label}
@@ -156,8 +156,8 @@ export default function AuthTerrainPage() {
             ))}
           </div>
 
-          <form onSubmit={soumettreTerrain} className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
+          <form onSubmit={soumettreTerrain} className="space-y-3.5 sm:space-y-4">
+            <div className="grid gap-3 sm:gap-4 sm:grid-cols-2">
               {modeTerrain === "inscription" && (
                 <>
                   <div>
@@ -202,7 +202,7 @@ export default function AuthTerrainPage() {
                   value={matricule}
                   onChange={(e) => setMatricule(e.target.value.toUpperCase())}
                 />
-                <p className="mt-1 text-xs text-slate-500">
+                <p className="mt-1 text-[11px] text-slate-500">
                   Le matricule est vérifié dans la base des agents autorisés de la DRH.
                 </p>
               </div>
@@ -239,8 +239,8 @@ export default function AuthTerrainPage() {
               </>
             )}
 
-            <Button type="submit" size="lg" disabled={enCours} className="w-full sm:w-auto">
-              {enCours ? <Loader2 className="animate-spin" size={18} /> : <Lock size={18} />}
+            <Button type="submit" size="md" disabled={enCours} className="w-full sm:w-auto">
+              {enCours ? <Loader2 className="animate-spin" size={16} /> : <Lock size={16} />}
               {enCours
                 ? "Vérification du matricule en cours…"
                 : modeTerrain === "connexion"
@@ -249,17 +249,17 @@ export default function AuthTerrainPage() {
             </Button>
 
             {/* Profils de démonstration en un clic (idéal pitch jury) */}
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-600">
-                <Sparkles size={14} className="text-institution" /> Profils de test rapides (cliquez pour remplir)
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 sm:p-4">
+              <p className="flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-slate-600">
+                <Sparkles size={13} className="text-institution" /> Profils de test rapides (cliquez pour remplir)
               </p>
-              <div className="mt-2.5 flex flex-wrap gap-2">
+              <div className="mt-2 flex flex-wrap gap-1.5 sm:gap-2">
                 {Object.entries(AGENTS_DEMO_DATA).map(([mat, data]) => (
                   <button
                     key={mat}
                     type="button"
                     onClick={() => selectionnerAgentDemo(mat)}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm transition hover:border-institution hover:bg-institution/5 hover:text-institution"
+                    className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-700 shadow-sm transition hover:border-institution hover:bg-institution/5 hover:text-institution"
                   >
                     <span className="font-mono font-semibold">{mat}</span>
                     <span className="text-slate-400">·</span>

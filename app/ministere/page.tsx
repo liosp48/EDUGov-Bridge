@@ -18,6 +18,7 @@ import {
 import KpiCard from "@/components/kpi-card";
 import GeoSelector from "@/components/geo-selector";
 import RapportIA from "@/components/rapport-ia";
+import InteractiveMap from "@/components/dashboard/InteractiveMap";
 import {
   Badge,
   Button,
@@ -39,11 +40,6 @@ import {
   type Consultation,
   type Signalement,
 } from "@/types/database";
-import {
-  GEO_BURKINA,
-  provincesOf,
-  communesOf,
-} from "@/lib/geographie";
 import {
   IRD_SEUILS,
   calculerIRD,
@@ -72,15 +68,6 @@ const GraphCauses = dynamic(() => import("@/components/graph-causes"), {
     </div>
   ),
 });
-
-/** Couleur d'une cellule de la carte thermique selon l'IRD (/100) */
-function couleurIRD(ird: number): string {
-  if (ird === 0) return "bg-slate-100 text-slate-400";
-  if (ird >= IRD_SEUILS.eleve + 20) return "bg-faso-red/20 text-faso-red";
-  if (ird >= IRD_SEUILS.eleve) return "bg-faso-red/10 text-faso-red";
-  if (ird >= IRD_SEUILS.moyen) return "bg-amber-100 text-amber-700";
-  return "bg-faso-green/15 text-faso-green";
-}
 
 export default function MinisterePage() {
   const router = useRouter();
@@ -178,24 +165,6 @@ export default function MinisterePage() {
     };
   }, [filtres]);
 
-  // ── Carte thermique à granularité progressive ─────────────────
-  const heatmap = useMemo(() => {
-    const base = filtres;
-    if (commune) {
-      return [
-        {
-          nom: `${commune} (${province}, ${region})`,
-          alertes: base.length,
-          eleves: kpis.eleves,
-          ird: kpis.ird,
-        },
-      ];
-    }
-    if (province) return zonesTouchees(base, "commune");
-    if (region) return zonesTouchees(base, "province");
-    return zonesTouchees(base, "region");
-  }, [filtres, region, province, commune, kpis]);
-
   // ── Causes principales (indicateurs) — graphique ──────────────
   const parCause = useMemo(() => {
     return causesPrincipales(filtres)
@@ -255,43 +224,43 @@ export default function MinisterePage() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="mx-auto max-w-7xl px-3 py-6 sm:px-6 sm:py-10">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="flex items-center gap-2 text-3xl font-bold text-slate-900">
-            <Landmark className="text-institution" size={28} /> Tableau de Bord Anti-Décrochage
+          <h1 className="flex items-center gap-2 text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900">
+            <Landmark className="text-institution shrink-0" size={24} /> <span>Tableau de Bord Anti-Décrochage</span>
           </h1>
-          <p className="mt-1 text-slate-600">
+          <p className="mt-1 text-xs sm:text-sm text-slate-600">
             Défi 1 — Anticipation & riposte ·{" "}
             {isSupabaseConfigured ? "Données Supabase en direct" : "Mode démo (données réalistes)"}
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Badge className="bg-faso-red/10 text-faso-red">
-            {kpis.total} alertes dans le périmètre
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <Badge className="bg-faso-red/10 text-faso-red text-[11px] sm:text-xs">
+            {kpis.total} alerte(s)
           </Badge>
-          <Card className="flex items-center gap-3 px-4 py-2.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-faso-green/10 text-faso-green">
-              <Building2 size={18} />
+          <Card className="flex items-center gap-2 sm:gap-3 px-3 py-1.5 sm:px-4 sm:py-2">
+            <span className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full bg-faso-green/10 text-faso-green">
+              <Building2 size={16} />
             </span>
-            <div className="text-left">
-              <p className="text-sm font-semibold leading-tight text-slate-800">{session.nom}</p>
-              <p className="flex items-center gap-1 text-xs text-faso-green">
-                <ShieldCheck size={12} /> {session.email}
+            <div className="text-left min-w-0">
+              <p className="text-xs sm:text-sm font-semibold leading-tight text-slate-800 truncate">{session.nom}</p>
+              <p className="flex items-center gap-1 text-[10px] sm:text-xs text-faso-green truncate">
+                <ShieldCheck size={11} className="shrink-0" /> <span className="truncate">{session.email}</span>
               </p>
             </div>
-            <Button size="sm" variant="ghost" onClick={deconnexion} aria-label="Se déconnecter">
-              <LogOut size={15} /> Quitter
+            <Button size="sm" variant="ghost" onClick={deconnexion} aria-label="Se déconnecter" className="h-8 px-2 text-xs">
+              <LogOut size={13} /> <span className="hidden xs:inline">Quitter</span>
             </Button>
           </Card>
         </div>
       </div>
 
       {/* Filtres géographiques */}
-      <Card className="mt-6">
-        <CardContent className="p-4 pt-4">
-          <p className="mb-3 flex items-center gap-2 text-sm font-medium text-slate-700">
-            <Filter size={15} /> Filtre Région / Province / Commune
+      <Card className="mt-4 sm:mt-6">
+        <CardContent className="p-3 sm:p-4 pt-3 sm:pt-4">
+          <p className="mb-2.5 sm:mb-3 flex items-center gap-2 text-xs sm:text-sm font-medium text-slate-700">
+            <Filter size={14} /> Filtre Région / Province / Commune
           </p>
           <GeoSelector
             region={region}
@@ -315,7 +284,7 @@ export default function MinisterePage() {
       </Card>
 
       {/* Onglets */}
-      <div className="mt-6 inline-flex rounded-lg border border-slate-200 bg-white p-1 shadow-card">
+      <div className="mt-4 sm:mt-6 flex flex-wrap sm:inline-flex w-full sm:w-auto gap-1 rounded-lg border border-slate-200 bg-white p-1 shadow-card">
         {(
           [
             { key: "strategie", label: "Vue stratégique" },
@@ -326,26 +295,33 @@ export default function MinisterePage() {
           <button
             key={t.key}
             onClick={() => setOnglet(t.key)}
-            className={`rounded-md px-4 py-2 text-sm font-medium transition ${
-              onglet === t.key ? "bg-institution text-white" : "text-slate-600 hover:bg-slate-100"
+            className={`flex-1 sm:flex-initial text-center rounded-md px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium transition ${
+              onglet === t.key ? "bg-institution text-white shadow-sm" : "text-slate-600 hover:bg-slate-100"
             }`}
           >
-            {t.label}
+            {t.key === "brief" ? (
+              <>
+                <span className="sm:hidden">Brief IA</span>
+                <span className="hidden sm:inline">Ministre Brief IA — Décrochage</span>
+              </>
+            ) : (
+              t.label
+            )}
           </button>
         ))}
       </div>
 
       {/* ══════════ VUE STRATÉGIQUE ══════════ */}
       {onglet === "strategie" && (
-        <div className="mt-6 space-y-6">
+        <div className="mt-4 sm:mt-6 space-y-4 sm:space-y-6">
           {/* KPIs clés du Défi 1 */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-4">
             <KpiCard
-              label="Indicateur Global de Risque (IRD)"
+              label="Indicateur Global (IRD)"
               value={`${kpis.ird}/100`}
               hint={
                 kpis.total === 0
-                  ? "Aucune alerte sur le périmètre"
+                  ? "Aucune alerte"
                   : `Risque ${kpis.niveau} · ${kpis.alertesSemaine} alerte(s) cette semaine`
               }
               accent={
@@ -361,16 +337,16 @@ export default function MinisterePage() {
               value={kpis.ecolesCritiques.length}
               hint={
                 kpis.ecolesCritiques.length > 0
-                  ? kpis.ecolesCritiques.slice(0, 3).join(", ") +
-                    (kpis.ecolesCritiques.length > 3 ? "…" : "")
-                  : "Aucune école en criticité ≥ 4/5"
+                  ? kpis.ecolesCritiques.slice(0, 2).join(", ") +
+                    (kpis.ecolesCritiques.length > 2 ? "…" : "")
+                  : "Aucune école critique"
               }
               accent={kpis.ecolesCritiques.length > 0 ? "red" : "green"}
             />
             <KpiCard
-              label="Élèves signalés en danger"
+              label="Élèves en danger"
               value={kpis.eleves}
-              hint="En danger de déscolarisation sur le périmètre"
+              hint="En danger de déscolarisation"
               accent={kpis.eleves > 0 ? "red" : "green"}
             />
             <KpiCard
@@ -381,12 +357,14 @@ export default function MinisterePage() {
             />
           </div>
 
-          {/* Carte thermique — liste filtrée des zones les plus touchées */}
+          {/* Carte interactive de vigilance éducative — géométrie régionale,
+              coloration IRD et navigation Région → Province → Commune.
+              La sélection pilote les filtres géographiques du tableau de bord. */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <MapPin size={18} className="text-institution" /> Carte thermique — zones les plus
-                touchées
+                <MapPin size={18} className="text-institution" /> Carte de
+                vigilance éducative
                 <span className="ml-2 text-xs font-normal text-slate-500">
                   {region
                     ? province
@@ -397,51 +375,24 @@ export default function MinisterePage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-                {heatmap.map((h) => (
-                  <button
-                    key={h.nom}
-                    onClick={() => {
-                      // Drill-down : région → province → commune
-                      if (!region) {
-                        const trouve = GEO_BURKINA.find(
-                          (r) => h.nom.startsWith(r.nom) || h.nom === r.nom
-                        );
-                        setRegion(trouve?.nom ?? h.nom);
-                      } else if (!province) {
-                        const candidat = provincesOf(region).find((p) => h.nom.startsWith(p));
-                        if (candidat) setProvince(candidat);
-                      } else if (!commune) {
-                        const candidat = communesOf(region, province).find((c) =>
-                          h.nom.startsWith(c)
-                        );
-                        if (candidat) setCommune(candidat);
-                      }
-                    }}
-                    className={`rounded-lg border border-slate-200 px-3 py-3 text-left transition hover:ring-2 hover:ring-institution/40 ${couleurIRD(h.ird)} ${
-                      (commune && h.nom.startsWith(commune)) ||
-                      (!commune && province && h.nom.startsWith(province)) ||
-                      (!commune && !province && region && h.nom.startsWith(region))
-                        ? "ring-2 ring-institution"
-                        : ""
-                    }`}
-                  >
-                    <p className="text-sm font-semibold">{h.nom}</p>
-                    <p className="text-xs opacity-80">
-                      IRD {h.ird}/100 · {h.alertes} alerte(s) · {h.eleves} élève(s)
-                    </p>
-                  </button>
-                ))}
-                {heatmap.length === 0 && (
-                  <p className="py-6 text-sm text-slate-500">
-                    Aucune alerte sur ce périmètre.
-                  </p>
-                )}
-              </div>
-              <p className="mt-3 text-xs text-slate-500">
-                Cliquer sur une zone descend d'un niveau (région → province → commune). L'intensité
-                de couleur reflète l'IRD local.
-              </p>
+              <InteractiveMap
+                signalements={signalements ?? []}
+                region={region}
+                province={province}
+                commune={commune}
+                onChange={(patch) => {
+                  if (patch.region !== undefined) {
+                    setRegion(patch.region);
+                    setProvince("");
+                    setCommune("");
+                  }
+                  if (patch.province !== undefined) {
+                    setProvince(patch.province);
+                    setCommune("");
+                  }
+                  if (patch.commune !== undefined) setCommune(patch.commune);
+                }}
+              />
             </CardContent>
           </Card>
 
@@ -514,31 +465,33 @@ export default function MinisterePage() {
             </CardHeader>
             <CardContent className="divide-y divide-slate-100">
               {filtres.slice(0, 8).map((s) => (
-                <div key={s.id} className="flex items-start justify-between gap-4 py-3">
-                  <div className="min-w-0">
-                    <p className="flex flex-wrap items-center gap-2 text-sm font-medium text-slate-800">
+                <div key={s.id} className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 sm:gap-4 py-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-medium text-slate-800">
                       <span
-                        className={`inline-block h-2 w-2 rounded-full ${
+                        className={`inline-block h-2 w-2 rounded-full shrink-0 ${
                           s.gravite >= 4 ? "bg-faso-red" : "bg-amber-400"
                         }`}
                       />
-                      {s.etablissement} — {s.commune} ({s.region})
+                      <span className="font-semibold">{s.etablissement}</span>
+                      <span className="text-slate-400">·</span>
+                      <span className="text-slate-600">{s.commune} ({s.region})</span>
                       {s.nb_eleves_risque > 0 && (
-                        <Badge className="bg-faso-red/10 text-faso-red">
-                          <Users size={12} /> {s.nb_eleves_risque} élève(s)
+                        <Badge className="bg-faso-red/10 text-faso-red text-[10px] sm:text-xs">
+                          <Users size={11} /> {s.nb_eleves_risque} élève(s)
                         </Badge>
                       )}
                     </p>
-                    <p className="mt-0.5 text-xs text-slate-500">
+                    <p className="mt-0.5 text-[11px] sm:text-xs text-slate-500">
                       {formatDateFr(s.created_at)} · gravité {s.gravite}/5 · signaux :{" "}
                       {s.indicateurs.length > 0 ? s.indicateurs.length : 0} indicateur(s)
                     </p>
-                    <p className="mt-1 line-clamp-2 text-sm text-slate-600">{s.description}</p>
+                    <p className="mt-1 line-clamp-2 text-xs sm:text-sm text-slate-600 leading-relaxed">{s.description}</p>
                   </div>
                 </div>
               ))}
               {filtres.length === 0 && (
-                <p className="py-6 text-center text-sm text-slate-500">
+                <p className="py-6 text-center text-xs sm:text-sm text-slate-500">
                   Aucune alerte sur ce périmètre.
                 </p>
               )}
@@ -561,19 +514,19 @@ export default function MinisterePage() {
 
       {/* ══════════ CONSULTATIONS ══════════ */}
       {onglet === "consultations" && (
-        <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        <div className="mt-4 sm:mt-6 grid gap-4 sm:gap-6 lg:grid-cols-2">
           {/* Lancer une consultation ciblée */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Megaphone size={18} className="text-institution" /> Lancer une consultation ciblée
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <Megaphone size={18} className="text-institution shrink-0" /> <span>Lancer une consultation ciblée</span>
               </CardTitle>
-              <p className="text-sm text-slate-600">
+              <p className="text-xs sm:text-sm text-slate-600">
                 Le questionnaire sera visible instantanément par les acteurs de la zone ciblée.
               </p>
             </CardHeader>
             <CardContent>
-              <form onSubmit={publierConsultation} className="space-y-4">
+              <form onSubmit={publierConsultation} className="space-y-3.5 sm:space-y-4">
                 <div>
                   <Label htmlFor="titre">Titre</Label>
                   <Input
@@ -615,13 +568,15 @@ export default function MinisterePage() {
                   />
                 </div>
                 {consultSucces && (
-                  <p className="rounded-lg border border-faso-green/30 bg-faso-green/10 px-4 py-3 text-sm text-faso-green">
+                  <p className="rounded-lg border border-faso-green/30 bg-faso-green/10 px-3.5 py-2.5 text-xs sm:text-sm text-faso-green">
                     {consultSucces}
                   </p>
                 )}
                 <Button
                   type="submit"
+                  size="md"
                   disabled={consultEnvoi || titreConsult.trim().length < 5 || questionConsult.trim().length < 20}
+                  className="w-full sm:w-auto"
                 >
                   {consultEnvoi ? <Loader2 className="animate-spin" size={16} /> : <Send size={16} />}
                   Publier la consultation

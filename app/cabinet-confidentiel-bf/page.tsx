@@ -138,66 +138,66 @@ function Dashboard({
   ];
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+    <div className="mx-auto max-w-6xl px-3 py-6 sm:px-6 sm:py-10">
       {/* En-tête */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-            <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-900 text-white shadow-lg">
-              <Building2 size={24} />
-            </span>
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900">Cabinet Ministériel & Décideurs</h1>
-              <p className="text-sm text-slate-500">
-                Supervision centrale des Ordres de Mission · Connecté : <strong>{session.email}</strong>
-              </p>
-            </div>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <span className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-white shadow-lg">
+            <Building2 size={20} className="sm:size-[24px]" />
+          </span>
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Cabinet Ministériel & Décideurs</h1>
+            <p className="text-xs sm:text-sm text-slate-500 truncate max-w-xs sm:max-w-none">
+              Supervision centrale des Ordres de Mission · <span className="font-semibold text-slate-700">{session.email}</span>
+            </p>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
           <Button
             onClick={() => router.push("/ministere")}
             variant="outline"
             size="sm"
-            className="gap-1.5"
+            className="gap-1 text-xs h-8 sm:h-9"
           >
-            <ClipboardList size={15} /> Tableau Stratégique
+            <ClipboardList size={13} /> <span className="hidden sm:inline">Tableau </span>Stratégique
           </Button>
           <Button
             onClick={() => router.push("/cabinet-confidentiel-bf/missions/nouvelle")}
             size="sm"
-            className="gap-1.5"
+            className="gap-1 text-xs h-8 sm:h-9"
           >
-            <Plus size={15} /> Nouvel ordre de mission
+            <Plus size={13} /> <span className="hidden sm:inline">Nouvel </span>Ordre de mission
           </Button>
-          <Button size="sm" variant="outline" onClick={onDeconnexion} className="gap-1.5">
+          <Button size="sm" variant="outline" onClick={onDeconnexion} className="gap-1 text-xs h-8 sm:h-9">
             Quitter
           </Button>
         </div>
       </div>
 
       {/* Cartes KPI */}
-      <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="mt-6 sm:mt-8 grid grid-cols-2 gap-2.5 sm:gap-4 sm:grid-cols-4">
         {[
           { label: "Missions totales", value: totalMissions, color: "text-slate-800" },
           { label: "Publiées & En cours", value: publiees + enCours, color: "text-blue-600" },
           { label: "Missions terminées", value: terminees, color: "text-faso-green" },
-          { label: "Signalements reçus du terrain", value: totalSignalements, color: "text-faso-red" },
+          { label: "Signalements terrain", value: totalSignalements, color: "text-faso-red" },
         ].map((k) => (
           <Card key={k.label}>
-            <CardContent className="p-4">
-              <p className="text-xs font-semibold uppercase text-slate-500">{k.label}</p>
-              <p className={`mt-1 text-3xl font-extrabold ${k.color}`}>{chargement ? "…" : k.value}</p>
+            <CardContent className="p-3.5 sm:p-4">
+              <p className="text-[11px] sm:text-xs font-semibold uppercase text-slate-500 leading-tight">{k.label}</p>
+              <p className={`mt-1 text-2xl sm:text-3xl font-extrabold ${k.color}`}>{chargement ? "…" : k.value}</p>
             </CardContent>
           </Card>
         ))}
       </div>
 
       {/* Catégories de classement des missions (Exigence 10.2) */}
-      <div className="mt-8 flex flex-wrap items-center gap-2 border-b border-slate-200 pb-3">
+      <div className="mt-6 sm:mt-8 flex flex-wrap items-center gap-1.5 sm:gap-2 border-b border-slate-200 pb-3">
         {FILTRES.map((f) => (
           <button
             key={f.key}
             onClick={() => setFiltreStatut(f.key)}
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition ${filtreStatut === f.key
+            className={`flex items-center gap-1.5 rounded-lg px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs font-medium transition ${filtreStatut === f.key
                 ? "bg-institution text-white shadow-sm"
                 : "bg-slate-100 text-slate-600 hover:bg-slate-200"
               }`}
@@ -364,10 +364,10 @@ function Dashboard({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-5 shrink-0 border-l border-slate-100 pl-4">
-                    <div className="text-center">
-                      <p className="text-2xl font-black text-faso-green">{nbSignalements}</p>
-                      <p className="text-[11px] text-slate-500 font-medium">
+                  <div className="flex items-center gap-3 sm:gap-5 shrink-0 border-t sm:border-t-0 sm:border-l border-slate-100 pt-2.5 sm:pt-0 sm:pl-4 w-full sm:w-auto justify-between sm:justify-center">
+                    <div className="text-left sm:text-center">
+                      <p className="text-xl sm:text-2xl font-black text-faso-green">{nbSignalements}</p>
+                      <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium">
                         signalement{nbSignalements > 1 ? "s" : ""}
                       </p>
                     </div>

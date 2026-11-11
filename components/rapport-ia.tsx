@@ -213,44 +213,45 @@ export default function RapportIA({
       {/* ── Barre de génération ─────────────────────────────────── */}
       <Card className="border-2 border-institution/20 no-print">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <BrainCircuit className="text-institution" size={24} /> Rapport d&apos;étude IA —
-            Ministère Brief Décrochage
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <BrainCircuit className="text-institution shrink-0" size={22} /> <span>Rapport d&apos;étude IA — Ministère Brief Décrochage</span>
           </CardTitle>
-          <p className="text-sm text-slate-600">
+          <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
             Analyse approfondie des <strong>descriptions libres</strong> du terrain :{" "}
             {nbFenetre} alerte(s) du périmètre ({perimetre}) · {ird}/100 IRD ·{" "}
-            {elevesEnDanger(fenetreSeptJours(signalements))} élèves en danger. Le rapport
-            est produit côté serveur (clé OpenAI jamais exposée au navigateur).
+            {elevesEnDanger(fenetreSeptJours(signalements))} élèves en danger.
           </p>
         </CardHeader>
-        <CardContent className="flex flex-wrap items-center gap-3">
+        <CardContent className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 sm:gap-3">
           <Button
-            size="lg"
+            size="md"
             onClick={() => void generer()}
             disabled={enCours || signalements.length === 0}
+            className="w-full sm:w-auto text-xs sm:text-sm"
           >
             {enCours ? (
-              <Loader2 className="animate-spin" size={18} />
+              <Loader2 className="animate-spin" size={16} />
             ) : rapport ? (
-              <RefreshCw size={18} />
+              <RefreshCw size={16} />
             ) : (
-              <Sparkles size={18} />
+              <Sparkles size={16} />
             )}
-            {enCours
-              ? "Analyse IA en cours — exploitation des témoignages du terrain…"
-              : rapport
-                ? "Régénérer le rapport (nouvelles données)"
-                : "Générer le rapport d'étude complet"}
+            <span>
+              {enCours
+                ? "Analyse IA en cours…"
+                : rapport
+                  ? "Régénérer le rapport"
+                  : "Générer le rapport d'étude"}
+            </span>
           </Button>
           {rapport && (
-            <Button size="lg" variant="outline" onClick={() => window.print()}>
-              <Printer size={18} /> Imprimer / Exporter en PDF
+            <Button size="md" variant="outline" onClick={() => window.print()} className="w-full sm:w-auto text-xs sm:text-sm">
+              <Printer size={16} /> Imprimer / PDF
             </Button>
           )}
           {historique.length > 0 && (
-            <Button size="lg" variant="ghost" onClick={() => setMontreHistorique((v) => !v)}>
-              <History size={18} /> Historique ({historique.length})
+            <Button size="md" variant="ghost" onClick={() => setMontreHistorique((v) => !v)} className="w-full sm:w-auto text-xs sm:text-sm">
+              <History size={16} /> Historique ({historique.length})
             </Button>
           )}
         </CardContent>

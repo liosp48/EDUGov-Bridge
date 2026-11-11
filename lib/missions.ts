@@ -13,6 +13,11 @@ import type {
   UserRole,
 } from "@/types/database";
 import { DEMO_MISSIONS, DEMO_SIGNALEMENTS_MISSION } from "./demo-data";
+import {
+  backendIndisponible,
+  marquerBackendIndisponible,
+  marquerBackendOperationnel,
+} from "./reseau";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -61,27 +66,30 @@ const TTL = 30_000;
 export async function fetchMissions(): Promise<Mission[]> {
   const now = Date.now();
   if (cacheMissions && now < cacheMissions.exp) return cacheMissions.data;
-  if (!isConfigured) {
+  if (!isConfigured || backendIndisponible()) {
     cacheMissions = { data: DEMO_MISSIONS, exp: now + TTL };
     return DEMO_MISSIONS;
   }
 
-  const query = (async () => {
+  const query = (async (): Promise<Mission[] | null> => {
     try {
       const { data, error } = await getClient()
         .from("missions")
         .select("*")
         .order("created_at", { ascending: false });
-      if (error || !data || data.length === 0) return DEMO_MISSIONS;
+      if (error || !data || data.length === 0) return null;
       return data as Mission[];
     } catch {
-      return DEMO_MISSIONS;
+      return null;
     }
   })();
 
-  const missions = await withTimeout(query, DEMO_MISSIONS, 1500);
-  cacheMissions = { data: missions, exp: now + TTL };
-  return missions;
+  const missions = await withTimeout<Mission[] | null>(query, null, 1500);
+  const final = missions ?? DEMO_MISSIONS;
+  if (missions) marquerBackendOperationnel();
+  else marquerBackendIndisponible();
+  cacheMissions = { data: final, exp: now + TTL };
+  return final;
 }
 
 /** Missions publiées et pertinentes pour un acteur terrain donné */
@@ -107,27 +115,30 @@ export async function fetchMissionsPourTerrain(
 export async function fetchSignalementsMission(): Promise<SignalementMission[]> {
   const now = Date.now();
   if (cacheSignalementsM && now < cacheSignalementsM.exp) return cacheSignalementsM.data;
-  if (!isConfigured) {
+  if (!isConfigured || backendIndisponible()) {
     cacheSignalementsM = { data: DEMO_SIGNALEMENTS_MISSION, exp: now + TTL };
     return DEMO_SIGNALEMENTS_MISSION;
   }
 
-  const query = (async () => {
+  const query = (async (): Promise<SignalementMission[] | null> => {
     try {
       const { data, error } = await getClient()
         .from("signalements_mission")
         .select("*")
         .order("created_at", { ascending: false });
-      if (error || !data || data.length === 0) return DEMO_SIGNALEMENTS_MISSION;
+      if (error || !data || data.length === 0) return null;
       return data as SignalementMission[];
     } catch {
-      return DEMO_SIGNALEMENTS_MISSION;
+      return null;
     }
   })();
 
-  const signalements = await withTimeout(query, DEMO_SIGNALEMENTS_MISSION, 1500);
-  cacheSignalementsM = { data: signalements, exp: now + TTL };
-  return signalements;
+  const signalements = await withTimeout<SignalementMission[] | null>(query, null, 1500);
+  const final = signalements ?? DEMO_SIGNALEMENTS_MISSION;
+  if (signalements) marquerBackendOperationnel();
+  else marquerBackendIndisponible();
+  cacheSignalementsM = { data: final, exp: now + TTL };
+  return final;
 }
 
 /** Signalements d'une mission spécifique */
@@ -138,7 +149,7 @@ export async function fetchSignalementsParMission(missionId: string): Promise<Si
 
 /** Vérifie si un acteur a déjà transmis un signalement pour une mission donnée */
 export async function aDejaTransmis(missionId: string, profilId: string): Promise<boolean> {
-  if (!isConfigured) {
+  if (!isConfigured || backendIndisponible()) {
     return DEMO_SIGNALEMENTS_MISSION.some(
       (s) => s.mission_id === missionId && s.profil_id === profilId
     );
@@ -153,6 +164,7 @@ export async function aDejaTransmis(missionId: string, profilId: string): Promis
         .maybeSingle();
       return !error && Boolean(data);
     } catch {
+      marquerBackendIndisponible();
       return false;
     }
   })();

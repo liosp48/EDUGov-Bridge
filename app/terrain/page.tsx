@@ -384,43 +384,43 @@ export default function TerrainPage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
+    <div className="mx-auto max-w-5xl px-3 py-6 sm:px-6 sm:py-10">
       {/* En-tête profil */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Espace Terrain</h1>
-          <p className="mt-1 text-slate-600">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900">Espace Terrain</h1>
+          <p className="mt-1 text-xs sm:text-sm text-slate-600">
             Liaison opérationnelle avec le Cabinet Ministériel & Alerte précoce.
           </p>
         </div>
-        <Card className="flex items-center gap-3 px-4 py-2.5">
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-institution/10 text-institution">
-            <UserRound size={18} />
+        <Card className="flex items-center gap-2 sm:gap-3 px-3 py-1.5 sm:px-4 sm:py-2">
+          <span className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full bg-institution/10 text-institution">
+            <UserRound size={16} />
           </span>
-          <div className="text-left">
-            <p className="text-sm font-semibold leading-tight text-slate-800">
+          <div className="text-left min-w-0">
+            <p className="text-xs sm:text-sm font-semibold leading-tight text-slate-800 truncate">
               {session.prenom ? `${session.prenom} ${session.nom}` : session.nom}
             </p>
-            <p className="text-xs text-slate-500">
+            <p className="text-[10px] sm:text-xs text-slate-500 truncate">
               {session.matricule ? `Matricule ${session.matricule}` : session.email} · {ROLE_LABELS[role]}
             </p>
           </div>
-          <Button size="sm" variant="ghost" onClick={deconnexion} aria-label="Se déconnecter">
-            <LogOut size={15} /> Quitter
+          <Button size="sm" variant="ghost" onClick={deconnexion} aria-label="Se déconnecter" className="h-8 px-2 text-xs">
+            <LogOut size={13} /> <span className="hidden sm:inline">Quitter</span>
           </Button>
         </Card>
       </div>
 
       {/* Message de succès global des missions */}
       {missionSucces && (
-        <div className="mt-6 flex items-center justify-between gap-3 rounded-xl border border-faso-green/30 bg-faso-green/10 p-4 text-sm text-faso-green">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 size={18} className="shrink-0" />
-            <span>{missionSucces}</span>
+        <div className="mt-4 sm:mt-6 flex items-center justify-between gap-3 rounded-xl border border-faso-green/30 bg-faso-green/10 p-3 sm:p-4 text-xs sm:text-sm text-faso-green">
+          <div className="flex items-center gap-2 min-w-0">
+            <CheckCircle2 size={16} className="shrink-0" />
+            <span className="truncate sm:whitespace-normal">{missionSucces}</span>
           </div>
           <button
             onClick={() => setMissionSucces(null)}
-            className="text-xs font-semibold hover:underline"
+            className="text-xs font-semibold hover:underline shrink-0"
           >
             Fermer
           </button>
@@ -428,22 +428,22 @@ export default function TerrainPage() {
       )}
 
       {/* Onglets principaux */}
-      <div className="mt-8 flex flex-wrap gap-2 border-b border-slate-200 pb-2">
+      <div className="mt-6 sm:mt-8 flex flex-wrap gap-1.5 sm:gap-2 border-b border-slate-200 pb-2">
         <button
           onClick={() => setOnglet("missions")}
-          className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition ${onglet === "missions"
+          className={`flex items-center gap-1.5 sm:gap-2 rounded-lg px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium transition ${onglet === "missions"
               ? "bg-institution text-white shadow-sm"
               : "text-slate-600 hover:bg-slate-100"
             }`}
         >
-          <ClipboardList size={16} />
+          <ClipboardList size={14} className="sm:size-[16px]" />
           <span>Ordres de Mission</span>
           {nbMissionsEnAttente > 0 ? (
-            <span className="rounded-full bg-institution px-2 py-0.5 text-xs font-bold text-white">
+            <span className="rounded-full bg-white/20 text-white sm:bg-institution sm:text-white px-1.5 sm:px-2 py-0.2 sm:py-0.5 text-[10px] sm:text-xs font-bold">
               {nbMissionsEnAttente} à faire
             </span>
           ) : (
-            <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs text-slate-700">
+            <span className="rounded-full bg-slate-200 px-1.5 sm:px-2 py-0.2 sm:py-0.5 text-[10px] sm:text-xs text-slate-700">
               {missionsTerrain.length}
             </span>
           )}
@@ -451,14 +451,15 @@ export default function TerrainPage() {
 
         <button
           onClick={() => setOnglet("signaler")}
-          className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition ${
+          className={`flex items-center gap-1.5 sm:gap-2 rounded-lg px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium transition ${
             onglet === "signaler"
               ? "bg-institution text-white shadow-sm"
               : "text-slate-600 hover:bg-slate-100"
           }`}
         >
-          <AlertTriangle size={16} />
-          <span>Alerte Précoce Spontanée</span>
+          <AlertTriangle size={14} className="sm:size-[16px]" />
+          <span className="sm:hidden">Alerte Spontanée</span>
+          <span className="hidden sm:inline">Alerte Précoce Spontanée</span>
         </button>
 
         <button
@@ -466,13 +467,13 @@ export default function TerrainPage() {
             setOnglet("consultations");
             void chargerConsultations();
           }}
-          className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition ${
+          className={`flex items-center gap-1.5 sm:gap-2 rounded-lg px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium transition ${
             onglet === "consultations"
               ? "bg-institution text-white shadow-sm"
               : "text-slate-600 hover:bg-slate-100"
           }`}
         >
-          <BellRing size={16} />
+          <BellRing size={14} className="sm:size-[16px]" />
           <span>Consultations</span>
         </button>
       </div>
@@ -553,7 +554,7 @@ export default function TerrainPage() {
                         </div>
 
                         {/* Actions selon état d'avancement de CET utilisateur */}
-                        <div className="shrink-0">
+                        <div className="w-full sm:w-auto mt-2 sm:mt-0 shrink-0">
                           {estEffectuee ? (
                             <Button
                               size="sm"
@@ -561,10 +562,10 @@ export default function TerrainPage() {
                               onClick={() =>
                                 setMissionAfficheeLectureId((prev) => (prev === m.id ? null : m.id))
                               }
-                              className="gap-1.5 text-slate-700"
+                              className="w-full sm:w-auto gap-1.5 text-slate-700"
                             >
                               <Eye size={14} />
-                              {estAfficheeEnLecture ? "Masquer mon signalement" : "Voir mon signalement (Lecture seule)"}
+                              {estAfficheeEnLecture ? "Masquer mon signalement" : "Voir mon signalement"}
                               {estAfficheeEnLecture ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                             </Button>
                           ) : (
@@ -574,7 +575,7 @@ export default function TerrainPage() {
                                 setMissionActiveId((prev) => (prev === m.id ? null : m.id));
                                 setMissionErreur(null);
                               }}
-                              className="gap-1.5"
+                              className="w-full sm:w-auto gap-1.5"
                             >
                               <FileCheck2 size={14} />
                               {estOuvertePourSaisie ? "Fermer le formulaire" : "Exécuter la mission"}
@@ -754,20 +755,21 @@ export default function TerrainPage() {
                             />
                           </div>
 
-                          <div className="flex gap-2 pt-2">
+                          <div className="flex flex-col sm:flex-row gap-2 pt-2">
                             <Button
                               size="sm"
                               disabled={missionEnvoi}
                               onClick={() => void soumettreSignalementPourMission(m)}
-                              className="gap-1.5"
+                              className="w-full sm:w-auto gap-1.5"
                             >
                               {missionEnvoi ? <Loader2 className="animate-spin" size={15} /> : <Send size={15} />}
-                              {missionEnvoi ? "Transmission en cours…" : "Transmettre définitivement mon signalement"}
+                              {missionEnvoi ? "Transmission en cours…" : "Transmettre mon signalement"}
                             </Button>
                             <Button
                               size="sm"
                               variant="outline"
                               onClick={() => setMissionActiveId(null)}
+                              className="w-full sm:w-auto"
                             >
                               Annuler
                             </Button>
@@ -924,7 +926,7 @@ export default function TerrainPage() {
             </p>
           )}
 
-          <Button type="submit" size="lg" disabled={envoi} className="w-full sm:w-auto">
+          <Button type="submit" size="md" disabled={envoi} className="w-full sm:w-auto">
             {envoi ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
             {envoi ? "Transmission en cours…" : "Transmettre l'alerte au système national"}
           </Button>

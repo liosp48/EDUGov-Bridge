@@ -117,19 +117,19 @@ export default function NouvelleMissionPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
-      <div className="mb-6 flex items-center gap-3">
+    <div className="mx-auto max-w-3xl px-3 py-6 sm:px-6 sm:py-10">
+      <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row sm:items-center gap-3">
         <Button
           size="sm"
           variant="outline"
           onClick={() => router.push("/cabinet-confidentiel-bf")}
-          className="gap-1.5"
+          className="gap-1.5 w-fit"
         >
           <ArrowLeft size={14} /> Retour
         </Button>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Nouvel Ordre de Mission</h1>
-          <p className="text-sm text-slate-500">Remplissez le formulaire puis publiez ou sauvegardez en brouillon.</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Nouvel Ordre de Mission</h1>
+          <p className="text-xs sm:text-sm text-slate-500">Remplissez le formulaire puis publiez ou sauvegardez en brouillon.</p>
         </div>
       </div>
 
@@ -290,21 +290,22 @@ export default function NouvelleMissionPage() {
         </Card>
 
         {/* Actions */}
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-col sm:flex-row flex-wrap gap-2.5 sm:gap-3">
           <Button
-            size="lg"
+            size="md"
             onClick={() => void soumettre("publier")}
             disabled={envoi}
-            className="gap-2"
+            className="w-full sm:w-auto gap-2"
           >
-            {envoi ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
+            {envoi ? <Loader2 className="animate-spin" size={16} /> : <Send size={16} />}
             Publier & Émettre la mission
           </Button>
           <Button
-            size="lg"
+            size="md"
             variant="outline"
             onClick={() => void soumettre("brouillon")}
             disabled={envoi}
+            className="w-full sm:w-auto"
           >
             Sauvegarder en brouillon
           </Button>

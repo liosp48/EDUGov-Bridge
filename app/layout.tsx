@@ -12,35 +12,35 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr" className="scroll-smooth">
+    <html lang="fr" className="scroll-smooth" data-scroll-behavior="smooth">
       <body className="min-h-screen flex flex-col bg-slate-50 text-slate-800 antialiased">
         {/* Bandeau tricolore officiel du Burkina Faso */}
         <div className="band-ruban" />
 
         {/* Header institutionnel sobre et élégant */}
         <header className="border-b border-slate-200/80 bg-white/95 backdrop-blur-md sticky top-0 z-50">
-          <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
-            <Link href="/" className="flex items-center gap-3 group">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-institution text-white shadow-sm transition group-hover:bg-institution-dark">
-                <GraduationCap size={22} />
+          <div className="mx-auto flex max-w-7xl items-center justify-between px-3 py-2 sm:px-6 sm:py-3">
+            <Link href="/" className="flex items-center gap-2 sm:gap-3 group min-w-0">
+              <span className="flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-lg sm:rounded-xl bg-institution text-white shadow-sm transition group-hover:bg-institution-dark">
+                <GraduationCap size={18} className="sm:size-[22px]" />
               </span>
-              <div>
-                <span className="flex items-center gap-1.5">
-                  <span className="block text-base font-extrabold leading-tight text-slate-900 tracking-tight">
+              <div className="min-w-0">
+                <span className="flex items-center gap-1 sm:gap-1.5">
+                  <span className="block text-sm sm:text-base font-extrabold leading-tight text-slate-900 tracking-tight truncate">
                     Faso Édu-Data
                   </span>
-                  <span className="inline-block rounded bg-institution/10 px-1.5 py-0.2 text-[10px] font-bold text-institution uppercase">
+                  <span className="inline-block shrink-0 rounded bg-institution/10 px-1 sm:px-1.5 py-0.2 text-[9px] sm:text-[10px] font-bold text-institution uppercase">
                     Officiel
                   </span>
                 </span>
-                <span className="block text-[11px] text-slate-500 font-medium">
+                <span className="block text-[10px] sm:text-[11px] text-slate-500 font-medium truncate max-w-[130px] sm:max-w-none">
                   République du Burkina Faso · MENAPLN
                 </span>
               </div>
             </Link>
 
             {/* Navigation droite */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
               <NavSession />
             </div>
           </div>
@@ -51,8 +51,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
         {/* Footer républicain soigné */}
         <footer className="border-t border-slate-200 bg-white text-xs text-slate-500">
-          <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
-            <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4 pb-8 border-b border-slate-100">
+          <div className="mx-auto max-w-7xl px-4 py-8 sm:py-12 sm:px-6">
+            <div className="grid gap-6 sm:gap-8 sm:grid-cols-2 lg:grid-cols-4 pb-6 sm:pb-8 border-b border-slate-100">
               <div>
                 <p className="font-bold text-slate-900 text-sm mb-2">Faso Édu-Data</p>
                 <p className="text-xs text-slate-500 leading-relaxed">
