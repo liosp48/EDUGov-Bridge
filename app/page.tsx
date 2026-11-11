@@ -1,73 +1,332 @@
 import Link from "next/link";
-import { ArrowRight, LogIn, Radar } from "lucide-react";
-import { Badge, Card, CardHeader, CardTitle } from "@/components/ui";
+import {
+  ArrowRight,
+  CheckCircle2,
+  GraduationCap,
+  Lock,
+  Radar,
+  Scale,
+  ShieldCheck,
+  Sparkles,
+} from "lucide-react";
+import { Badge, Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
 import { INDICATEURS_DECROCHAGE } from "@/types/database";
 
 // ─────────────────────────────────────────────────────────────────
-// Page d'accueil publique — MOT D'ORDRE DE LA MISSION (Défi 1)
-// Vitrine institutionnelle ultra-rapide (rendu statique instantané)
-// destinée au corps éducatif et au grand public.
+// Page d'accueil officielle — PLATEFORME NATIONALE FASO ÉDU-DATA
+// Portail d'État épuré, sobre et noble. Couleurs pures républicaines.
+// Rendu statique instantané (0 latence).
 // ─────────────────────────────────────────────────────────────────
 
 export default function LandingPage() {
   return (
-    <>
-      {/* ── MOT D'ORDRE ─────────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-institution text-white">
-        <div aria-hidden className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-white/5" />
-        <div aria-hidden className="pointer-events-none absolute -bottom-32 left-1/3 h-80 w-80 rounded-full bg-faso-red/20 blur-3xl" />
-        <div className="relative mx-auto max-w-7xl px-4 py-20 text-center sm:px-6 lg:py-28">
-          <Badge className="bg-white/10 text-faso-gold">
-            Data Challenge Burkina 2026 · Défi n°1
-          </Badge>
-          <h1 className="mx-auto mt-6 max-w-3xl text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl">
-            Un enfant qui décroche s'est d'abord annoncé. Savoir voir, agir à temps.
-          </h1>
-          <p className="mx-auto mt-5 max-w-2xl text-lg text-slate-100/90">
-            Mission de tout le corps éducatif du Burkina : repérer les signaux faibles du
-            décrochage scolaire et les remonter, pour qu'aucun enfant ne disparaisse de l'école
-            en silence.
-          </p>
-
+      <div className="flex flex-col min-h-screen bg-white">
+        {/* ── 1. BANDEAU OFFICIEL D'ÉTAT ───────────────────────────── */}
+        <div className="border-b border-slate-200 bg-slate-50 py-2 text-xs">
+          <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6">
+            <div className="flex items-center gap-2.5">
+              <span className="inline-block h-2.5 w-2.5 rounded-full bg-faso-green" />
+              <span className="font-bold tracking-wider text-slate-800 uppercase text-[11px]">
+                RÉPUBLIQUE DU BURKINA FASO · Unité — Progrès — Justice
+              </span>
+            </div>
+            <span className="hidden text-slate-500 sm:inline text-[11px] font-medium">
+              Plateforme interministérielle MENAPLN × MTDPCE
+            </span>
+          </div>
         </div>
-      </section>
 
-      {/* ── LES SIGNAUX À SURVEILLER (consigne de mission) ──────── */}
-      <section className="mx-auto max-w-5xl px-4 py-16 sm:px-6">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-slate-900">
-            Les signaux qu'il faut savoir voir
+              {/* ── 2. HERO SECTION RÉGALIENNE EN COULEUR PURE (BLEU D'ÉTAT) ─ */}
+              <section className="relative bg-[#0B2545] text-white">
+                <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:py-20">
+                  <div className="mx-auto max-w-4xl text-center">
+                    {/* Badge officiel net */}
+                    <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold text-white shadow-sm">
+                      <span className="flex h-2 w-2 rounded-full bg-faso-green" />
+                      <span>Système National de Vigilance Éducative & Alerte Précoce</span>
+                      <span className="text-white/40">·</span>
+                      <span className="text-slate-200">Défi n°1 Anti-Décrochage</span>
+                    </div>
+
+                    {/* Grand titre régalien en blanc pur */}
+                    <h1 className="mt-7 text-3xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl leading-tight">
+                      Anticiper le décrochage scolaire, <br className="hidden sm:inline" />
+                      protéger le parcours de chaque élève.
+                    </h1>
+
+                    {/* Sous-titre institutionnel clair */}
+                    <p className="mx-auto mt-6 max-w-3xl text-base text-slate-200 sm:text-lg leading-relaxed font-normal">
+                      Le dispositif d'État reliant directement le <strong>corps éducatif de terrain</strong> (enseignants, directeurs, inspecteurs, APE/COGES) au{" "}
+                      <strong>Ministère de l'Éducation Nationale</strong> pour identifier les signaux faibles, déclencher la riposte
+                      et maintenir les enfants dans les registres scolaires.
+                    </p>
+
+                    {/* Actions principales — Bouton blanc pur avec texte bleu d'État */}
+                    <div className="mt-9 flex flex-wrap items-center justify-center gap-4">
+                      <Link
+                        href="/auth"
+                        className="inline-flex items-center gap-2.5 rounded-lg bg-white px-6 py-3.5 text-sm font-bold text-[#0B2545] shadow-md transition hover:bg-slate-100"
+                      >
+                        <GraduationCap size={18} />
+                        <span>Accéder à l'Espace Terrain</span>
+                        <ArrowRight size={16} />
+                      </Link>
+                      <a
+                        href="#dispositif"
+                        className="inline-flex items-center gap-2 rounded-lg border border-white/30 bg-white/5 px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-white/10"
+                      >
+                        <span>Consulter le dispositif d'État</span>
+                      </a>
+                    </div>
+
+              {/* Chiffres clés en blanc pur */}
+              <div className="mt-14 grid grid-cols-2 gap-6 border-t border-white/15 pt-8 sm:grid-cols-4">
+                <div className="text-left sm:text-center">
+                  <p className="text-3xl font-extrabold text-white">17</p>
+                  <p className="mt-1 text-xs text-slate-300 font-medium">Régions administratives</p>
+                </div>
+                <div className="text-left sm:text-center">
+                  <p className="text-3xl font-extrabold text-white">351</p>
+                  <p className="mt-1 text-xs text-slate-300 font-medium">Communes du Burkina Faso</p>
+                </div>
+                <div className="text-left sm:text-center">
+                  <p className="text-3xl font-extrabold text-white">Temps réel</p>
+                  <p className="mt-1 text-xs text-slate-300 font-medium">Remontée immédiate</p>
+                </div>
+                <div className="text-left sm:text-center">
+                  <p className="text-3xl font-extrabold text-faso-green">100%</p>
+                  <p className="mt-1 text-xs text-slate-300 font-medium">Matricules MENAPLN officiels</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+          {/* ── 3. LA DOCTRINE RÉPUBLICAINE DU DÉFI 1 ─────────────────── */}
+          <section id="dispositif" className="mx-auto max-w-7xl px-4 py-16 sm:px-6">
+            <div className="mx-auto max-w-3xl text-center">
+              <Badge className="bg-institution/10 text-institution font-bold text-xs uppercase tracking-wider">
+                Doctrine Nationale · Défi 1
+              </Badge>
+              <h2 className="mt-3 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+                Un élève ne disparaît jamais du jour au lendemain
+              </h2>
+              <p className="mt-3 text-sm text-slate-600 leading-relaxed">
+                Le décrochage scolaire est toujours précédé de signaux précurseurs : absences répétées, difficultés économiques,
+                chocs climatiques ou sécuritaires locaux. Le protocole Faso Édu-Data permet d'intercepter ces alertes avant la déscolarisation définitive.
+              </p>
+            </div>
+
+              {/* 3 piliers en couleurs pures sobres */}
+              <div className="mt-12 grid gap-6 sm:grid-cols-3">
+                <Card className="border-slate-200 shadow-sm transition hover:border-institution">
+                  <CardHeader className="pb-3">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-institution/10 text-institution mb-2">
+                      <Radar size={22} />
+                    </span>
+                    <CardTitle className="text-base text-slate-900">1. Détection sur le Terrain</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      Les enseignants, directeurs d'école et comités APE/COGES qualifient directement les signaux faibles
+                      constatés en classe ou au sein des familles, via leur matricule DRH officiel.
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-slate-200 shadow-sm transition hover:border-institution">
+                  <CardHeader className="pb-3">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-slate-100 text-slate-800 mb-2">
+                      <Scale size={22} />
+                    </span>
+                    <CardTitle className="text-base text-slate-900">2. Analyse de Risque IRD</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      Le système calcule l'Indicateur de Risque de Décrochage (IRD) à l'échelle de chaque commune et
+                      province, cartographiant les foyers de vulnérabilité sans délai.
+                    </p>
+                  </CardContent>
+                </Card>
+
+          <Card className="border-slate-200 shadow-sm transition hover:border-institution">
+            <CardHeader className="pb-3">
+              <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-faso-green/15 text-faso-green mb-2">
+                <Sparkles size={22} />
+              </span>
+              <CardTitle className="text-base text-slate-900">3. Riposte & Ordres de Mission</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Le Cabinet Ministériel émet des ordres de mission ciblés, mobilise les comités de soutien et déploie les aides
+                d'urgence appuyées par des synthèses stratégiques générées par IA.
+              </p>
+            </CardContent>
+          </Card>
+      </div>
+    </section>
+
+      {/* ── 4. CATALOGUE DES 7 SIGNAUX FAIBLES À SURVEILLER ────────── */}
+      <section className="bg-slate-50 border-y border-slate-200 py-16">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <div className="flex flex-wrap items-end justify-between gap-4 mb-10">
+            <div className="max-w-2xl">
+              <Badge className="bg-faso-red/10 text-faso-red font-bold text-xs uppercase tracking-wider">
+                Référentiel Officiel
+              </Badge>
+              <h2 className="mt-2 text-2xl font-bold text-slate-900">
+                Les 7 indicateurs de vulnérabilité sous surveillance
+              </h2>
+              <p className="mt-1.5 text-xs text-slate-600">
+                Chaque signalement transmis par un acteur éducatif est catégorisé selon son niveau de criticité régalien.
+              </p>
+            </div>
+            <Link
+              href="/auth"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-institution hover:underline"
+            >
+              Signaler une alerte <ArrowRight size={13} />
+            </Link>
+          </div>
+
+          <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+            {(Object.entries(INDICATEURS_DECROCHAGE) as [string, { label: string; poids: number }][]).map(
+              ([cle, { label, poids }]) => {
+                const estUrgenceVitale = poids >= 4;
+                return (
+                  <Card
+                    key={cle}
+                    className={`border transition hover:shadow-sm ${
+              estUrgenceVitale ? "border-l-4 border-l-faso-red bg-white" : "border-slate-200 bg-white"
+            }`}
+                  >
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between gap-2">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded bg-slate-100 text-slate-700">
+                  <Radar size={15} className={estUrgenceVitale ? "text-faso-red" : "text-institution"} />
+                </span>
+                <Badge
+                  className={
+                    poids === 5
+                      ? "bg-faso-red/15 text-faso-red font-bold text-[10px]"
+                      : poids >= 4
+                        ? "bg-slate-200 text-slate-800 text-[10px] font-semibold"
+                        : "bg-slate-100 text-slate-600 text-[10px]"
+                  }
+                >
+                  Niveau {poids}/5
+                </Badge>
+              </div>
+              <h3 className="mt-2.5 text-sm font-semibold text-slate-900">{label}</h3>
+              <p className="mt-1 text-xs text-slate-500">
+                {poids === 5
+                  ? "Priorité nationale absolue · Intervention requise sans délai."
+                  : poids >= 4
+                    ? "Signal critique · Enquête et médiation scolaire prioritaires."
+                    : "Signal modéré · Suivi régulier des registres de présence."}
+              </p>
+            </CardContent>
+          </Card>
+          );
+              }
+            )}
+        </div>
+    </div>
+  </section>
+
+  {/* ── 5. SÉCURITÉ, DÉONTOLOGIE & PROTECTION DES DONNÉES ───────── */ }
+  <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6">
+    <div className="rounded-xl border border-slate-200 bg-white p-8 sm:p-10 shadow-sm">
+      <div className="grid gap-8 lg:grid-cols-2 lg:items-center">
+        <div>
+          <div className="inline-flex items-center gap-1.5 rounded bg-institution/10 px-2.5 py-1 text-xs font-bold text-institution">
+            <ShieldCheck size={14} /> Sécurité Républicaine & Confidentialité
+          </div>
+          <h2 className="mt-3 text-2xl font-bold text-slate-900">
+            Un cadre strict préservant l'anonymat des mineurs
           </h2>
-          <p className="mx-auto mt-2 max-w-2xl text-slate-600">
-            Le mot d'ordre de la mission : dès que l'un de ces signes apparaît auprès d'un élève
-            ou d'une famille, il doit remonter. Connectez-vous pour accéder à la mission et
-            transmettre vos observations.
-          </p>
-        </div>
-
-        <div className="mt-10 grid gap-3 sm:grid-cols-2">
-          {Object.values(INDICATEURS_DECROCHAGE).map((ind) => (
-            <Card key={ind.label} className="border-l-4 border-l-faso-red">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Radar size={19} className="shrink-0 text-faso-red" /> {ind.label}
-                </CardTitle>
-              </CardHeader>
-            </Card>
-          ))}
-        </div>
-
-        <div className="mt-10 rounded-2xl bg-slate-50 px-6 py-8 text-center sm:px-12">
-          <p className="text-sm font-medium uppercase tracking-wide text-slate-500">
-            Corps éducatif — enseignants, directeurs, inspecteurs, APE/COGES
-          </p>
-          <p className="mx-auto mt-3 max-w-2xl text-slate-700">
-            Vous êtes les yeux de la nation. Connectez-vous avec vos identifiants pour consulter
-            le détail de la mission et remonter vos alertes.
+          <p className="mt-3 text-xs text-slate-600 leading-relaxed">
+            La plateforme applique les principes de protection des données d'État. Aucun nom complet d'élève mineur
+            n'est diffusé publiquement. Seules les données agrégées et les descriptions contextuelles remontent aux
+            autorités de tutelle pour orienter les politiques de réintégration.
           </p>
 
+          <div className="mt-5 space-y-2.5">
+            {[
+              "Authentification par matricule MENAPLN officiel vérifié auprès de la base DRH.",
+              "Verrouillage anti-doublon individuel par ordre de mission émis.",
+              "Conservation et archivage immuable des signalements transmis par le terrain.",
+              "Protection cryptographique des accès et isolation des espaces stratégiques.",
+            ].map((item, idx) => (
+              <div key={idx} className="flex items-start gap-2 text-xs text-slate-700">
+                <CheckCircle2 size={15} className="text-faso-green shrink-0 mt-0.5" />
+                <span>{item}</span>
+              </div>
+            ))}
+          </div>
         </div>
-      </section>
-    </>
+
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-5">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-3">
+            Qui peut émettre un signalement ?
+          </h3>
+          <div className="space-y-2.5">
+            {[
+              {
+                role: "Enseignants",
+                desc: "Constat direct de l'absentéisme et de la baisse de scolarisation en classe.",
+              },
+              {
+                role: "Directeurs d'école",
+                desc: "Vérification des registres officiels, constats d'abandons silencieux.",
+              },
+              {
+                role: "Inspecteurs / Encadreurs",
+                desc: "Coordination pédagogique au niveau des circonscriptions et communes.",
+              },
+              {
+                role: "Représentants APE / COGES",
+                desc: "Lien de terrain avec les familles, orpaillage, transhumance, difficultés ménagères.",
+              },
+            ].map((act, idx) => (
+              <div key={idx} className="flex items-start gap-2.5 rounded bg-white p-2.5 border border-slate-200">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-institution text-white text-[10px] font-bold">
+                  {idx + 1}
+                </span>
+                <div>
+                  <strong className="text-xs font-semibold text-slate-900 block">{act.role}</strong>
+                  <span className="text-[11px] text-slate-500">{act.desc}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {/* ── 6. APPEL RÉPUBLICAIN À L'ACTION (CTA FINAL) ─────────────── */ }
+  <section className="bg-[#0B2545] text-white py-14">
+    <div className="mx-auto max-w-5xl px-4 text-center sm:px-6">
+      <Badge className="bg-white/10 text-white border border-white/20 text-xs">Mobilisation Nationale</Badge>
+      <h2 className="mt-3 text-2xl font-bold sm:text-3xl text-white">
+        Vous êtes acteur de terrain au Burkina Faso ?
+      </h2>
+      <p className="mx-auto mt-2.5 max-w-2xl text-xs sm:text-sm text-slate-200">
+        Votre observation est le point de départ de la riposte nationale. Connectez-vous dès maintenant pour consulter
+        les ordres de mission attribués à votre localité et transmettre vos alertes.
+      </p>
+      <div className="mt-7 flex flex-wrap items-center justify-center gap-4">
+        <Link
+          href="/auth"
+          className="inline-flex items-center gap-2 rounded-lg bg-white px-6 py-3 text-sm font-bold text-[#0B2545] shadow-md transition hover:bg-slate-100"
+        >
+          <Lock size={16} />
+          <span>Se connecter avec son matricule MENAPLN</span>
+        </Link>
+      </div>
+    </div>
+  </section>
+    </div >
   );
 }

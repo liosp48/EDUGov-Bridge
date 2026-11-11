@@ -232,3 +232,84 @@ export interface FiltreGeo {
   province: string;
   commune: string;
 }
+
+// ─────────────────────────────────────────────────────────────────
+// SYSTÈME D'ORDRES DE MISSION
+// Le Cabinet émet les missions → le Terrain exécute → le Cabinet reçoit
+// ─────────────────────────────────────────────────────────────────
+
+/** Statut du cycle de vie d'une mission */
+export type MissionStatut =
+  | "brouillon"    // créée, non publiée
+  | "publiee"      // émise, visible par le terrain
+  | "en_cours"     // au moins un signalement reçu
+  | "terminee"     // tous les acteurs ont répondu
+  | "cloturee";    // clôturée manuellement ou archivée
+
+export const MISSION_STATUT_LABELS: Record<MissionStatut, string> = {
+  brouillon: "Brouillon",
+  publiee: "Publiée",
+  en_cours: "En cours",
+  terminee: "Terminée",
+  cloturee: "Clôturée",
+};
+
+export const MISSION_STATUT_COLORS: Record<MissionStatut, string> = {
+  brouillon: "bg-slate-100 text-slate-600",
+  publiee: "bg-blue-100 text-blue-700",
+  en_cours: "bg-amber-100 text-amber-700",
+  terminee: "bg-faso-green/15 text-faso-green",
+  cloturee: "bg-slate-200 text-slate-500",
+};
+
+/** Statut de participation d'un acteur terrain à une mission */
+export type ParticipationStatut = "non_commence" | "en_cours" | "transmis";
+
+/** Ordre de mission émis par le Cabinet */
+export interface Mission {
+  id: string;
+  titre: string;
+  description: string;
+  objectifs: string;
+  consignes: string;
+  /** Ciblage géographique — null = national */
+  region_cible?: string | null;
+  province_cible?: string | null;
+  commune_cible?: string | null;
+  /** Types d'acteurs terrain destinataires */
+  roles_cibles: UserRole[];
+  statut: MissionStatut;
+  created_by: string; // email admin
+  created_at: string;
+  publiee_le?: string | null;
+  echeance?: string | null;
+}
+
+/** Signalement terrain lié à une mission spécifique (anti-doublon garanti) */
+export interface SignalementMission {
+  id: string;
+  mission_id: string;
+  profil_id: string;      // identifiant unique de l'acteur
+  matricule: string;      // matricule MENAPLN — clé de traçabilité
+  emetteur: string;       // nom complet
+  role_emetteur: UserRole;
+  region: string;
+  province: string;
+  commune: string;
+  etablissement: string;
+  indicateurs: IndicateurDecrochage[];
+  nb_eleves_risque: number;
+  gravite: 1 | 2 | 3 | 4 | 5;
+  description: string;
+  /** Toujours "transmis" — immuable une fois soumis */
+  statut: "transmis";
+  created_at: string;
+}
+
+/** Résumé de la participation terrain à une mission (pour le tableau de bord Cabinet) */
+export interface StatsMission {
+  total_assignes: number;
+  ont_transmis: number;
+  en_attente: number;
+  taux_realisation: number; // 0–100
+}

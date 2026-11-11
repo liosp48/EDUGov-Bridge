@@ -1,7 +1,9 @@
-﻿import type {
+import type {
   Consultation,
+  Mission,
   ReponseConsultation,
   Signalement,
+  SignalementMission,
   UserRole,
 } from "@/types/database";
 
@@ -396,3 +398,108 @@ export const AGENTS_DEMO_DATA: Record<
     etablissement: "Comité COGES Kaya Secteur 4",
   },
 };
+
+// ─────────────────────────────────────────────────────────────────
+// DONNÉES DE DÉMONSTRATION — ORDRES DE MISSION
+// ─────────────────────────────────────────────────────────────────
+
+export const DEMO_MISSIONS: Mission[] = [
+  {
+    id: "mission-demo-01",
+    titre: "Recensement des élèves déscolarisés — Région du Liptako",
+    description:
+      "Mission prioritaire de recensement des élèves ayant quitté l'école entre septembre et novembre 2026 dans la région du Liptako, afin d'alimenter le plan d'urgence national contre le décrochage scolaire.",
+    objectifs:
+      "1. Identifier le nombre exact d'élèves déscolarisés par établissement.\n2. Documenter les causes principales du décrochage dans la zone.\n3. Collecter les observations des enseignants et directeurs sur le terrain.",
+    consignes:
+      "Ne pas mentionner les noms complets des élèves mineurs. Remplir le formulaire avec précision. En cas de situation sécuritaire critique, signaler uniquement les faits observés sans donner de localisation précise des familles.",
+    region_cible: "Liptako",
+    province_cible: null,
+    commune_cible: null,
+    roles_cibles: ["enseignant", "directeur_ecole", "inspecteur"],
+    statut: "en_cours",
+    created_by: "admin@education.gov.bf",
+    created_at: "2026-11-01T08:00:00Z",
+    publiee_le: "2026-11-02T09:00:00Z",
+    echeance: "2026-11-30T23:59:00Z",
+  },
+  {
+    id: "mission-demo-02",
+    titre: "Enquête sur les impacts sécuritaires — Province du Séno",
+    description:
+      "Collecte de données sur les perturbations scolaires liées aux incidents sécuritaires survenus en octobre 2026 dans la province du Séno.",
+    objectifs:
+      "1. Recenser les établissements touchés par des fermetures ou des déplacements.\n2. Évaluer le nombre d'élèves affectés.\n3. Identifier les besoins urgents en matière de réintégration scolaire.",
+    consignes:
+      "Mission confidentielle. Ne partager aucune information avec des tiers. Utiliser uniquement les données d'observation directe.",
+    region_cible: "Liptako",
+    province_cible: "Séno",
+    commune_cible: null,
+    roles_cibles: ["directeur_ecole", "inspecteur"],
+    statut: "publiee",
+    created_by: "admin@education.gov.bf",
+    created_at: "2026-11-05T10:00:00Z",
+    publiee_le: "2026-11-06T08:00:00Z",
+    echeance: "2026-11-25T23:59:00Z",
+  },
+  {
+    id: "mission-demo-03",
+    titre: "Bilan national de participation parentale — APE/COGES",
+    description:
+      "Mission nationale destinée aux représentants APE et COGES pour évaluer le niveau d'implication des parents d'élèves dans la lutte contre le décrochage scolaire.",
+    objectifs:
+      "1. Mesurer le taux de participation des parents aux réunions scolaires.\n2. Recenser les initiatives locales de rétention scolaire.\n3. Identifier les freins à l'implication parentale.",
+    consignes:
+      "Mission ouverte à l'ensemble du territoire national. Les représentants APE/COGES de toutes les régions sont concernés.",
+    region_cible: null,
+    province_cible: null,
+    commune_cible: null,
+    roles_cibles: ["representant_parents"],
+    statut: "brouillon",
+    created_by: "admin@education.gov.bf",
+    created_at: "2026-11-08T14:00:00Z",
+    publiee_le: null,
+    echeance: "2026-12-15T23:59:00Z",
+  },
+];
+
+export const DEMO_SIGNALEMENTS_MISSION: SignalementMission[] = [
+  {
+    id: "sm-demo-01",
+    mission_id: "mission-demo-01",
+    profil_id: "MEN-2026-0031",
+    matricule: "MEN-2026-0031",
+    emetteur: "Aïcha Ouédraogo",
+    role_emetteur: "enseignant",
+    region: "Liptako",
+    province: "Séno",
+    commune: "Dori",
+    etablissement: "CEG Falagountou",
+    indicateurs: ["absenteisme_repete", "difficultes_financieres", "orpaillage_transhumance"],
+    nb_eleves_risque: 19,
+    gravite: 5,
+    description:
+      "Sur 52 filles inscrites en 6e, 19 ne reviennent plus depuis novembre. Transhumance et difficultés financières citées par les familles.",
+    statut: "transmis",
+    created_at: "2026-11-04T09:12:00Z",
+  },
+  {
+    id: "sm-demo-02",
+    mission_id: "mission-demo-01",
+    profil_id: "MEN-2026-0045",
+    matricule: "MEN-2026-0045",
+    emetteur: "Boureima Sawadogo",
+    role_emetteur: "directeur_ecole",
+    region: "Liptako",
+    province: "Séno",
+    commune: "Dori",
+    etablissement: "ÉPP Namissiguima",
+    indicateurs: ["choc_securitaire", "abandon_silencieux"],
+    nb_eleves_risque: 34,
+    gravite: 5,
+    description:
+      "Zone attaquée le mois dernier : 34 élèves absents depuis 3 semaines, sans nouvelles des familles déplacées.",
+    statut: "transmis",
+    created_at: "2026-11-06T07:40:00Z",
+  },
+];
